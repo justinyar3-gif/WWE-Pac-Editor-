@@ -1,36 +1,27 @@
 
-name: Build Android APK
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+}
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main, master ]
+android {
+    namespace = "com.modplacewii.paceditor"
+    compileSdk = 35
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    defaultConfig {
+        applicationId = "com.modplacewii.paceditor"
+        minSdk = 23
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
 
-    steps:
-      - uses: actions/checkout@v7
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 
-      - name: Setup Java
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
-      - name: Build debug APK
-        run: gradle :app:assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: WWE-Wii-PAC-Editor-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
