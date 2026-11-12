@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>WWE WII PAC EDITOR BY JATIN (MOD PLACE WII)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --win-blue:#0067C0;
+    --win-blue-2:#0092D6;
+    --win-blue-3:#50B0EA;
+    --win-purple:#8764B8;
+    --text:#1B1B1F;
+    --muted:#5B5F66;
+    --accent:#0067C0;
+    --accent2:#0092D6;
+    --ok:#107C10;
+    --danger:#C42B1C;
+    --glass-bg:rgba(255,255,255,.62);
+    --glass-bg-soft:rgba(255,255,255,.42);
+    --glass-border:rgba(255,255,255,.75);
+    --hair:rgba(0,0,0,.08);
+    --radius:8px;
+    --radius-lg:14px;
+    --shadow-tile:0 4px 24px rgba(20,40,70,.10), 0 1px 2px rgba(20,40,70,.06), inset 0 1px 0 rgba(255,255,255,.5);
+    --shadow-raised:0 12px 36px rgba(20,40,70,.16), inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;color:var(--text);
+    font-family:'Inter','Segoe UI Variable','Segoe UI',system-ui,-apple-system,sans-serif;
+    line-height:1.5;min-height:100vh;
+    background:
+      radial-gradient(1100px 700px at 8% -8%, rgba(80,176,234,.55), transparent 60%),
+      radial-gradient(1000px 800px at 105% 8%, rgba(135,100,184,.45), transparent 60%),
+      radial-gradient(900px 700px at 50% 115%, rgba(0,146,214,.35), transparent 60%),
+      linear-gradient(160deg,#e9f1fb 0%,#eef1fa 45%,#eee7f6 100%);
+    background-attachment:fixed;
+  }
+  /* soft ambient blobs behind content for a Mica/Acrylic desktop feel */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(420px 420px at 12% 18%, rgba(255,255,255,.5), transparent 70%),
+      radial-gradient(520px 520px at 88% 82%, rgba(255,255,255,.35), transparent 70%);
+    filter:blur(40px);
+  }
+
+  .wrap{max-width:1040px;margin:0 auto;padding:28px 16px 72px;}
+
+  /* ---------- glass tile base ---------- */
+  .tile, .hero, .drop, .opts, .stats, .toolbar, table, .modal-box, .note, .error, .crumbs-wrap{
+    background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(28px) saturate(1.5);
+    backdrop-filter:blur(28px) saturate(1.5);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-tile);
+  }
+
+  .hero{
+    padding:26px 28px 24px;margin-bottom:20px;position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:'';position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;
+    background:radial-gradient(circle, rgba(80,176,234,.35), transparent 70%);pointer-events:none;
+  }
+  .winlogo{display:inline-grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;width:26px;height:26px;margin-right:10px;vertical-align:-6px;}
+  .winlogo i{display:block;border-radius:2px;background:linear-gradient(135deg,var(--win-blue-3),var(--win-blue));}
+  .winlogo i:nth-child(2){background:linear-gradient(135deg,var(--win-purple),var(--win-blue));}
+  .winlogo i:nth-child(3){background:linear-gradient(135deg,var(--win-blue-2),var(--win-purple));}
+  .winlogo i:nth-child(4){background:linear-gradient(135deg,var(--win-blue),var(--win-blue-3));}
+
+  .ruler{font-family:'Cascadia Code',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;overflow-x:auto;white-space:nowrap;padding-bottom:10px;opacity:.7;}
+  h1{
+    font-family:'Inter',system-ui,sans-serif;font-weight:800;font-size:clamp(24px,4.6vw,38px);
+    margin:2px 0 6px;letter-spacing:-.5px;line-height:1.15;
+    background:linear-gradient(100deg,var(--win-blue) 0%,var(--win-blue-2) 45%,var(--win-purple) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  h1 span{ -webkit-text-fill-color:initial; color:var(--win-purple); }
+  .sub{color:var(--muted);font-size:14px;max-width:64ch;}
+
+  .drop{
+    padding:30px 18px;text-align:center;margin-bottom:16px;
+    transition:box-shadow .18s,border-color .18s,transform .12s;
+    border-style:dashed;border-color:rgba(0,103,192,.35);
+  }
+  .drop.drag{border-color:var(--accent);box-shadow:var(--shadow-raised);transform:translateY(-1px);}
+  .drop p{margin:0 0 14px;color:var(--muted);font-size:14px;}
+  .drop .fname{font-family:'Cascadia Code',monospace;color:var(--accent2);font-size:13px;word-break:break-all;margin-top:12px;min-height:16px;}
+  input[type=file]{display:none;}
+
+  label.pick, button{
+    font-family:'Inter',system-ui,sans-serif;font-size:13px;font-weight:600;
+    background:rgba(255,255,255,.55);color:var(--text);
+    border:1px solid rgba(255,255,255,.8);
+    padding:9px 18px;border-radius:var(--radius);cursor:pointer;display:inline-block;
+    -webkit-tap-highlight-color:transparent;
+    box-shadow:0 1px 2px rgba(20,40,70,.08), inset 0 1px 0 rgba(255,255,255,.7);
+    transition:transform .1s ease, box-shadow .15s ease, background .15s ease;
+  }
+  label.pick:hover, button:hover{background:rgba(255,255,255,.85);box-shadow:0 4px 14px rgba(0,103,192,.18), inset 0 1px 0 rgba(255,255,255,.8);transform:translateY(-1px);}
+  label.pick:active, button:active{transform:translateY(0);}
+  button.primary{
+    background:linear-gradient(135deg,var(--win-blue-3),var(--win-blue));
+    color:#fff;border:1px solid rgba(255,255,255,.35);
+  }
+  button.primary:hover{background:linear-gradient(135deg,var(--win-blue-2),var(--win-blue));box-shadow:0 6px 18px rgba(0,103,192,.35);}
+  button.ok{background:linear-gradient(135deg,#7fd88f,var(--ok));color:#fff;border:1px solid rgba(255,255,255,.35);}
+  button:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none;}
+  button:disabled:hover{background:rgba(255,255,255,.55);box-shadow:none;transform:none;}
+
+  .opts{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--muted);margin:0 0 20px;font-family:'Inter',sans-serif;align-items:center;padding:14px 18px;}
+  .opts label{display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:500;}
+  select{background:rgba(255,255,255,.7);color:var(--text);border:1px solid var(--hair);border-radius:6px;font-family:inherit;font-size:12px;padding:5px 8px;}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;padding:0;margin-bottom:16px;overflow:hidden;}
+  .stat{background:rgba(255,255,255,.28);padding:14px 16px;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+  .stat .k{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+  .stat .v{font-family:'Cascadia Code',monospace;font-size:16px;color:var(--accent);word-break:break-all;font-weight:600;}
+  .stat.warn .v{color:var(--danger);}
+
+  .crumbs{font-family:'Cascadia Code',monospace;font-size:12px;color:var(--muted);margin-bottom:14px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:transparent;border:none;box-shadow:none;backdrop-filter:none;padding:0;}
+  .crumbs .seg{cursor:pointer;padding:3px 8px;border-radius:6px;}
+  .crumbs .seg:hover{color:var(--accent);background:rgba(255,255,255,.6);}
+  .crumbs .seg.current{color:var(--win-purple);cursor:default;font-weight:600;}
+  .crumbs .seg.current:hover{background:none;}
+  .crumbs .sep{color:rgba(0,0,0,.25);}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding:14px 18px;}
+  .toolbar h2{font-family:'Inter',sans-serif;font-size:13px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;margin:0;font-weight:700;}
+  .count{color:var(--accent);font-weight:700;}
+  .toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+  table{width:100%;border-collapse:separate;border-spacing:0;font-family:'Cascadia Code',monospace;font-size:13px;overflow:hidden;margin-bottom:16px;}
+  thead th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:10px 12px;border-bottom:1px solid var(--hair);background:rgba(255,255,255,.35);}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--hair);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(0,103,192,.06);}
+  .addr{color:var(--accent2);}
+  .ext{color:var(--muted);}
+  .dirtag{font-size:10px;color:var(--win-purple);border:1px solid rgba(135,100,184,.4);background:rgba(135,100,184,.08);padding:2px 6px;border-radius:20px;margin-left:6px;}
+  .ctag{font-size:10px;color:var(--accent2);border:1px solid rgba(0,146,214,.4);background:rgba(0,146,214,.08);padding:2px 6px;border-radius:20px;margin-left:6px;}
+  .rowbtn{padding:5px 11px;font-size:11px;margin-left:4px;}
+  .rowbtn.danger{color:var(--danger);border-color:rgba(196,43,28,.35);}
+  .rowbtn.danger:hover{background:rgba(196,43,28,.1);box-shadow:0 4px 14px rgba(196,43,28,.18), inset 0 1px 0 rgba(255,255,255,.8);}
+  .actions-cell{white-space:nowrap;}
+  .rowwarn{color:var(--danger);font-size:11px;margin-top:4px;font-family:'Cascadia Code',monospace;}
+
+  @media (max-width:640px){
+    thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    table{background:transparent;box-shadow:none;border:none;backdrop-filter:none;}
+    tbody tr{background:var(--glass-bg);-webkit-backdrop-filter:blur(28px) saturate(1.5);backdrop-filter:blur(28px) saturate(1.5);border:1px solid var(--glass-border);box-shadow:var(--shadow-tile);margin-bottom:10px;padding:12px 14px;border-radius:var(--radius);}
+    tbody td{border:none;padding:3px 0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+    tbody td::before{content:attr(data-label);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;}
+    tbody td.name-cell::before{content:none;}
+    tbody td.name-cell{font-size:14px;color:var(--text);justify-content:flex-start;}
+    tbody td.action-cell{justify-content:flex-end;padding-top:8px;}
+  }
+
+  .empty{color:var(--muted);font-size:13px;padding:24px 0;text-align:center;background:var(--glass-bg-soft);border:1px dashed rgba(0,103,192,.3);border-radius:var(--radius-lg);}
+  .error{color:var(--danger);font-family:'Cascadia Code',monospace;font-size:13px;padding:16px 18px;border:1px solid rgba(196,43,28,.3);background:rgba(255,255,255,.6);margin-bottom:18px;}
+  .note{font-size:12px;color:var(--muted);margin-top:26px;padding:20px 22px;}
+  .note b{color:var(--text);}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(20,30,45,.35);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;
+    z-index:1000;padding:16px;
+  }
+  .modal-box{
+    padding:24px;max-width:420px;width:100%;font-family:'Inter',sans-serif;
+    box-shadow:var(--shadow-raised);
+  }
+  .modal-box h3{font-family:'Inter',sans-serif;font-weight:700;font-size:15px;margin:0 0 10px;color:var(--accent);}
+  .modal-box p{font-size:13px;color:var(--muted);margin:0 0 14px;white-space:pre-line;}
+  .modal-input{
+    width:100%;background:rgba(255,255,255,.7);color:var(--text);border:1px solid var(--hair);border-radius:6px;
+    font-family:'Cascadia Code',monospace;font-size:14px;padding:9px 11px;margin-bottom:16px;
+  }
+  .modal-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,103,192,.15);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="ruler" id="ruler"></div>
+    <h1><span class="winlogo"><i></i><i></i><i></i><i></i></span>WWE WII PAC EDITOR <span>BY JATIN</span>(MOD PLACE WII)</h1>
+    <div class="sub">Reads the table of contents out of PAC, PACH, DPK8, EPK8, EPAC and HSPC archives, lets you browse into nested containers without extracting first, and extract or inject individual entries — entirely in your browser. Nothing is uploaded anywhere.</div>
+  </div>
+
+  <div class="drop" id="drop">
+    <p>Drop a <b>.pac</b> file here, or</p>
+    <label class="pick" for="file">Choose file</label>
+    <input type="file" id="file">
+    <div class="fname" id="fname"></div>
+  </div>
+
+  <div class="opts">
+    <label>Byte order
+      <select id="endian"><option value="le">Little-endian</option><option value="be">Big-endian</option></select>
+    </label>
+    <label><input type="checkbox" id="k18mode"> 2K18 size quirk (−16 bytes, PAC/PACH only)</label>
+    <label>PAC/PACH naming
+      <select id="naming">
+        <option value="real" selected>Real ID (hex)</option>
+        <option value="generic">Generic (fileNNNNNN)</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="output"></div>
+  <input type="file" id="injectInput">
+  <input type="file" id="tplPngInput" accept="image/png, image/jpeg">
+
+  <div class="note">
+    <b>Format coverage:</b> PAC / PACH / DPK8 / EPK8 / EPAC / HSPC headers are parsed directly. SHDC and DPAC containers still aren't handled.<br>
+    <b>EPAC:</b> packs a recursive directory tree (mixing files and sub-directories at any depth) into a fixed 16KB header table — the same 2048-byte first row and 16KB size as DPK8/EPK8. Entries are shown flattened with their full path (e.g. <code>SSFA\0100</code>); a nested entry whose own data happens to be another recognized archive (PAC/PACH/DPK8/EPK8) still gets an <b>Open</b> button. Renaming and Injecting (including growing) work the same as other formats; <b>+ Add file</b> isn't supported for EPAC.<br>
+    <b>HSPC:</b> a 64-byte header, two index tables and the file data, in a fixed 16KB header area with a 2048-byte block size. Unlike the other formats it stores <b>no text names</b> — each entry is identified by a 64-bit name hash, shown here as 16 hex digits in the same byte order as in the file (entries with no matching hash record fall back to <code>fileNNNNNN</code>). File offsets are in 2048-byte blocks counted from the start of the container itself (not from the end of the header), and sizes are in 256-byte units. <b>Rename</b> edits the entry's 64-bit hash directly. <b>Inject</b> works like the other block-based formats, including growing: every later offset is rewritten, and the container's own size totals in its header (0x24, 0x2C, 0x3C) are kept in step. Two header fields whose purpose isn't known (0x10 and 0x28) are never touched, and 0x2C being treated as \"container blocks + 1\" is inferred from a single sample file. <b>+ Add file</b> and <b>Delete</b> aren't supported for HSPC.<br>
+    <b>Nested containers:</b> if an entry's own data starts with a recognized magic (PAC /PACH/DPK8/EPK8/EPAC/HSPC), an <b>Open</b> button appears — this browses straight into it, no extraction needed. Use the breadcrumb trail to go back up.<br>
+    <b>Nested containers under BPE:</b> if an entry's data starts with a <code>BPE </code> wrapper (very common for PAC files packed inside EPAC), an <b>Open (BPE)</b> button appears instead. It decompresses the entry in memory and, if the result starts with a recognized magic, opens straight into it — with full Rename/Inject/Delete/+ Add file support inside, exactly as if it were a real top-level file. Nothing is written back while you're browsing; when you leave (via the breadcrumb trail) or download, any edits are transparently recompressed with BPE (reproducing the original wrapper) and written back into the original slot, growing the outer archive if needed. This works however many BPE layers deep a file is nested. If the decompressed data isn't a recognized archive, it fails cleanly with an error instead of opening garbage.<br>
+    <b>View Image</b> (on <code>.bpe</code> and <code>.dds</code> entries) decompresses the entry in memory and shows it, with no separate Uncompress step and nothing written back to the archive. It auto-detects the format from the decompressed bytes: <b>DDS</b> (DXT1/DXT3/DXT5, or uncompressed 16/24/32-bit) or <b>TGA</b> (true-colour, colour-mapped or greyscale, raw or RLE) — the BPE entries in SSFaceHD.pac turn out to be 32-bit TGAs (half 512×512, half 256×256), not DDS. Only the top mip level of a DDS is shown. <b>Export PNG</b> saves what's on screen. If the data is neither, it says so and shows the first bytes.<br>
+    <b>Real ID names:</b> PAC/PACH entries don't store text filenames, just a numeric id — "Real ID" reconstructs the hex-id name scheme the original tool used (with a <code>[n]</code> suffix for duplicate ids); "Generic" falls back to sequential <code>fileNNNNNN</code> names. DPK8/EPK8 entries already store real ASCII names and are shown as-is.<br>
+    <b>Rename:</b> for DPK8/EPK8, edits the stored ASCII name in place (space-padded/truncated to the field's fixed width). For PAC/PACH, there's no text name to edit — only a numeric id — so "Rename" lets you set that hex id directly instead.<br>
+    <b>Uncompress</b> runs Philip Gage's 1994 Byte Pair Encoding expansion algorithm in the browser — the same scheme implemented by the classic <code>bpe.exe</code> compressor tool (confirmed by disassembling it). It works on any entry (PACH included) that was BPE-compressed, and downloads the raw expanded bytes. There's no reliable way to auto-detect which entries are BPE-compressed from the bytes alone, so this is a manual, try-it-on-an-entry action — if an entry isn't actually BPE data, decompression will fail cleanly with an error rather than produce garbage.<br>
+    <b>Inject as BPE</b> compresses your replacement file with the same algorithm before writing it into the slot. If the entry's existing data starts with a <code>BPE </code> wrapper header, the tool reproduces that same wrapper around the newly compressed data (one field in that wrapper has an unconfirmed meaning and is just copied from the original); otherwise it injects the raw compressed stream directly.<br>
+    <b>Inject</b> overwrites an entry's bytes in place and updates its stored size. If the replacement is <b>bigger</b> than the current slot, the tool now offers to grow the archive instead of refusing: it shifts every byte after the entry (in 2048-byte-rounded steps) and rewrites every offset field throughout the archive — including inside nested containers — so everything else still resolves correctly. This is a real, in-place rebuild of the buffer; there's no undo besides reloading the original file.<br>
+    <b>+ Add file</b> (top of the entry list) appends a brand-new entry. For a <b>PAC/PACH</b> container it grows the table of contents by one record and asks for the numeric id to give it. For an <b>EPK8</b> container it asks which existing directory to add the file to (if there's more than one) and a filename, then inserts a new row into that directory's section of the fixed 16KB header table — a local shuffle that's safe because EPK8's offsets are anchored to the end of that table, not to their row's position within it. Both append the new file's bytes at the very end of the archive. It's <b>not available for DPK8</b> — its packed fields are 16-bit rather than EPK8's 32-bit, and this tool doesn't have confirmed enough understanding of a DPK8 directory row's packed file-count field to safely add to it — nor for <b>HSPC</b>, whose two linked index tables and header size totals this tool doesn't yet rewrite for a new entry.<br>
+    <b>Delete</b> removes an entry entirely: its table record and its data, shifting everything after it and rewriting offset/size fields throughout the archive — including inside nested containers — the same generic engine used for growing an injected entry, run in reverse. For <b>PAC/PACH</b> this is exact byte-for-byte. For <b>EPK8</b> the data span removed is rounded up to a 2048-byte block, matching the convention this tool uses everywhere else for EPK8's block-quantized offsets. It's <b>not available for DPK8, EPAC or HSPC</b>, for the same reasons <b>+ Add file</b> isn't. Always confirmed before it runs, and — like everything else here — there's no undo besides reloading the original file.<br>
+    Once you've injected, renamed, deleted, or added anything, a <b>Download modified archive</b> button appears at the top level.<br>
+    <b>Extensions</b> are still a best-effort guess from magic bytes, and <b>byte order</b> can be flipped above if entry counts or sizes look wrong.<br>
+    <b>TPL Preview</b> appears on any entry tagged <code>.tpl</code> (GameCube/Wii CI8 texture, magic <code>0x0020AF30</code>) or <code>.bpe</code> (since these archives commonly store TPLs BPE-compressed) — it transparently strips a <code>BPE </code> wrapper and decompresses first if needed, then decodes the CI8-indexed, 8×4-block-swizzled image data through its cloned palette (RGB565 or RGB5A3) and renders it to a canvas, alongside its dimensions and palette format. Not a TPL (or not BPE data) fails cleanly with an error rather than showing garbage.<br>
+    <b>Inject PNG as TPL</b> clones that same entry's exact image/palette header bytes (so hardware flags like wrap/filter modes survive), resizes your replacement PNG/JPG to the locked dimensions, quantizes it into a ≤256-color palette matching the original's format, re-swizzles it into CI8 index data, and rebuilds a complete TPL. If the original entry was BPE-wrapped, the new TPL is recompressed and re-wrapped the same way before being written back with the normal Inject machinery (so oversized replacements still trigger the same grow-the-archive flow).
+  </div>
+
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const dropEl = $('drop'), fileInput = $('file'), fnameEl = $('fname'), outputEl = $('output');
+const endianSel = $('endian'), k18Chk = $('k18mode'), namingSel = $('naming'), injectInput = $('injectInput');
+const tplPngInput = $('tplPngInput');
+
+(function(){
+  let s = '';
+  for (let i=0;i<32;i++) s += i.toString(16).padStart(2,'0').toUpperCase() + ' ';
+  $('ruler').textContent = s;
+})();
+
+// Android bridge: large binary files are passed as base64 only at the WebView boundary.
+function loadNativeFile(name, base64){
+  try {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    masterBuffer = bytes.buffer;
+    masterView = new DataView(masterBuffer);
+    fileBaseName = name || 'opened.pac';
+    fnameEl.textContent = fileBaseName + '  (' + humanSize(masterBuffer.byteLength) + ')';
+    dirty = false;
+    bufferStack = [{buffer: masterBuffer, view: masterView, dirty: false, backing: null}];
+    activeBufLevel = 0;
+    navStack = [{label: fileBaseName, offset: 0, bufLevel: 0}];
+    renderCurrent();
+  } catch(err) { showError('Could not open the selected file: ' + err.message); }
+}
+function androidSaveBytes(name, bytes, mime){
+  if (!window.AndroidBridge) return false;
+  const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i=0;i<u8.length;i+=chunk) binary += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i+chunk,u8.length)));
+  window.AndroidBridge.saveFile(name, btoa(binary), mime || 'application/octet-stream');
+  return true;
+}
+async function saveBlobOrDownload(blob, name){
+  if (window.AndroidBridge) { androidSaveBytes(name, new Uint8Array(await blob.arrayBuffer()), blob.type); return; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function saveDataUrlOrDownload(dataUrl, name){
+  if (window.AndroidBridge) { const b64=dataUrl.split(',')[1]||''; window.AndroidBridge.saveFile(name,b64,dataUrl.slice(5,dataUrl.indexOf(';'))||'application/octet-stream'); return; }
+  const a=document.createElement('a'); a.href=dataUrl; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+}
+
+let masterBuffer = null;   // the ArrayBuffer for whichever layer is currently active (see bufferStack)
+let masterView = null;
+let fileBaseName = '';
+let dirty = false;
+let navStack = [];         // [{label, offset, bufLevel}] — offset = absolute start of this container's
+                            // magic WITHIN bufferStack[bufLevel].buffer
+let pendingInject = null;  // entry awaiting a replacement file
+let pendingInjectMode = 'raw'; // 'raw', 'bpe', or 'newentry'
+let pendingAddContainerBase = null; // absolute offset of container awaiting a brand-new entry
+let pendingTplEntry = null; // entry awaiting a replacement PNG to rebuild as a TPL
+let pendingTplMeta = null;  // {wasBpe, bpeField2, width, height, palFormat, imgHeaderBytes, palHeaderBytes} cloned from that entry's TPL
+const KNOWN_MAGICS = ['PAC ', 'PACH', 'DPK8', 'EPK8', 'EPAC', 'HSPC'];
+
+// --- Layered buffers: lets the tool open a container whose bytes only exist BPE-compressed
+// inside a parent entry (e.g. a PAC packed as .bpe inside an EPAC), browse and edit it exactly
+// like a real file, then transparently recompress and write it back into its parent slot —
+// recursively, however many BPE layers deep — when navigating back out or downloading.
+// bufferStack[0] is always the real loaded file. Each further index is one decompressed layer.
+let bufferStack = [];      // [{buffer, view, dirty, backing}] — backing is null for level 0, else
+                            // {parentLevel, realAddr, outSize, sizeField, kind, wasWrapped, bpeField2}
+                            // captured (in the PARENT's coordinate space) at the moment it was opened
+let activeBufLevel = 0;    // which bufferStack index masterBuffer/masterView currently mirror
+
+function markDirty(){
+  dirty = true;
+  if (bufferStack[activeBufLevel]) bufferStack[activeBufLevel].dirty = true;
+}
+
+// Points masterBuffer/masterView at a specific layer (does NOT touch navStack).
+function syncToLevel(level){
+  activeBufLevel = level;
+  masterBuffer = bufferStack[level].buffer;
+  masterView = bufferStack[level].view;
+}
+
+// Points masterBuffer/masterView at whatever layer the current breadcrumb top is on.
+function syncToTop(){
+  syncToLevel(navStack[navStack.length-1].bufLevel);
+}
+
+['dragover','dragenter'].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dropEl.addEventListener(ev, e => { e.preventDefault(); dropEl.classList.remove('drag'); }));
+dropEl.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+endianSel.addEventListener('change', () => masterBuffer && renderCurrent());
+k18Chk.addEventListener('change', () => masterBuffer && renderCurrent());
+namingSel.addEventListener('change', () => masterBuffer && renderCurrent());
+injectInput.addEventListener('change', onInjectFile);
+tplPngInput.addEventListener('change', onTplPngPicked);
+
+function loadFile(f){
+  fileBaseName = f.name;
+  fnameEl.textContent = f.name + '  (' + humanSize(f.size) + ')';
+  const reader = new FileReader();
+  reader.onload = e => {
+    masterBuffer = e.target.result;
+    masterView = new DataView(masterBuffer);
+    dirty = false;
+    bufferStack = [{buffer: masterBuffer, view: masterView, dirty: false, backing: null}];
+    activeBufLevel = 0;
+    navStack = [{label: f.name, offset: 0, bufLevel: 0}];
+    renderCurrent();
+  };
+  reader.onerror = () => showError('Could not read the file.');
+  reader.readAsArrayBuffer(f);
+}
+
+function humanSize(size){
+  const units = ['bytes','KB','MB','GB'];
+  let v = size, i = 0;
+  while (v >= 1024 && i < units.length-1){ v/=1024; i++; }
+  return (i===0 ? v : v.toFixed(2)) + ' ' + units[i];
+}
+
+function readUint(view, offset, size, be){
+  let val = 0;
+  if (be){ for (let i=0;i<size;i++) val = val*256 + view.getUint8(offset+i); }
+  else { for (let i=size-1;i>=0;i--) val = val*256 + view.getUint8(offset+i); }
+  return val;
+}
+function writeUint(view, offset, size, value, be){
+  if (be){ for (let i=0;i<size;i++) view.setUint8(offset+i, (value >>> (8*(size-1-i))) & 0xFF); }
+  else { for (let i=0;i<size;i++) view.setUint8(offset+i, (value >>> (8*i)) & 0xFF); }
+}
+
+function magicAt(view, offset, len){
+  if (offset < 0 || offset+4 > len) return null;
+  return String.fromCharCode(view.getUint8(offset),view.getUint8(offset+1),view.getUint8(offset+2),view.getUint8(offset+3));
+}
+
+function magicExt(view, offset, len){
+  if (offset + 4 > len) return '.dat';
+  const bytes = [0,1,2,3].map(i => view.getUint8(offset+i));
+  const asStr = String.fromCharCode(...bytes);
+  const table = {'RIFF':'.wav','OggS':'.ogg','DDS ':'.dds','FSB4':'.fsb','FSB5':'.fsb','BPE ':'.bpe'};
+  if (bytes[0]===0x89 && asStr.slice(1,4)==='PNG') return '.png';
+  if (bytes[0]===0x00 && bytes[1]===0x20 && bytes[2]===0xAF && bytes[3]===0x30) return '.tpl'; // GameCube/Wii TPL magic (big-endian 0x0020AF30)
+  if (asStr in table) return table[asStr];
+  if (bytes[0]===0xFF && bytes[1]===0xD8) return '.jpg';
+  return '.dat';
+}
+
+// An entry is worth offering TPL tools on if it's a raw TPL, or a BPE-compressed blob that
+// might unwrap into one (BPE compression is commonly used to pack TPL textures in these archives).
+function isTplCandidate(e){
+  return e.ext === '.tpl' || e.ext === '.bpe';
+}
+
+function bytesToAsciiName(bytes){
+  const printable = bytes.every(b => b === 0x20 || (b >= 0x21 && b <= 0x7e));
+  if (printable) return String.fromCharCode(...bytes).replace(/ /g, '') || '(unnamed)';
+  return bytes.map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+
+function hexIdName(fileno, minDigits4, dupSuffix){
+  let digits = fileno === 0 ? 1 : fileno.toString(16).length;
+  if (digits % 2 === 1) digits += 1;
+  if (minDigits4 && digits < 4) digits = 4;
+  let name = fileno.toString(16).toUpperCase().padStart(digits, '0');
+  if (dupSuffix !== undefined) name += `[${dupSuffix}]`;
+  return name;
+}
+
+function showError(msg){
+  outputEl.innerHTML = `<div class="error">${msg}</div>`;
+}
+
+// Parse a container starting at absolute offset `base` within masterBuffer.
+// Returns {magic, kind, entries, tocEnd, warnAlign} or throws Error.
+function parseContainerAt(base){
+  const view = masterView, len = masterBuffer.byteLength, be = endianSel.value === 'be';
+  const magic = magicAt(view, base, len);
+  if (!magic) throw new Error('Not enough data at this offset for a header.');
+  let entries = [], kind, tocEnd, warnAlign = false, hspc = null;
+
+  if (magic === 'PAC ' || magic === 'PACH'){
+    kind = 'PAC';
+    const nameSize = magic === 'PAC ' ? 2 : 4;
+    const offSize  = magic === 'PAC ' ? 3 : 4;
+    const sizeSize = magic === 'PAC ' ? 3 : 4;
+    const entryCount = readUint(view, base+4, 4, be);
+    if (entryCount < 0 || entryCount > 200000) throw new Error('Entry count parsed as ' + entryCount + ' — try flipping byte order.');
+    const recLen = nameSize + offSize + sizeSize;
+    if (base + 8 + entryCount*recLen > len) throw new Error('TOC runs past end of file — try flipping byte order.');
+    let cursor = base + 8;
+    for (let i=0;i<entryCount;i++){
+      const fileno = readUint(view, cursor, nameSize, be);
+      const addrFieldOffset = cursor + nameSize;
+      const sizeFieldOffset = cursor + nameSize + offSize;
+      const addr = readUint(view, addrFieldOffset, offSize, be);
+      const rawSize = readUint(view, sizeFieldOffset, sizeSize, be);
+      entries.push({ fileno, addr, rawSize, sizeField: {offset: sizeFieldOffset, len: sizeSize}, addrField: {offset: addrFieldOffset, len: offSize}, filenoField: {offset: cursor, len: nameSize}, isDir:false });
+      cursor += recLen;
+    }
+    tocEnd = cursor;
+    const is2k18 = k18Chk.checked;
+    const namingMode = namingSel.value;
+    const filenoList = entries.map(e => e.fileno);
+    const ordered = filenoList.every((v,i,arr) => i===0 || arr[i-1] < v);
+    const dupDict = {};
+    if (!ordered){
+      filenoList.forEach(fn => {
+        if (fn in dupDict) return;
+        const idxs = filenoList.reduce((acc,v,i)=>{ if (v===fn) acc.push(i); return acc; }, []);
+        if (idxs.length > 1) dupDict[fn] = idxs;
+      });
+    }
+    entries.forEach((e,i) => {
+      e.realAddr = e.addr + tocEnd;
+      e.outSize = is2k18 ? Math.max(e.rawSize - 16, 0) : e.rawSize;
+      e.kind = 'PAC';
+      if (namingMode === 'real'){
+        const dup = dupDict[e.fileno] ? dupDict[e.fileno].indexOf(i) : undefined;
+        e.name = hexIdName(e.fileno, false, dup);
+      } else {
+        e.name = 'file' + String(i).padStart(6,'0');
+      }
+      e.ext = magicExt(view, e.realAddr, len);
+      e.nestedMagic = magicAt(view, e.realAddr, len);
+      e.isBpeContainer = e.nestedMagic === 'BPE ';
+      e.isRealContainer = KNOWN_MAGICS.includes(e.nestedMagic); // same-buffer nested header — safe to recurse offset fixups into
+      e.isContainer = e.isRealContainer || e.isBpeContainer;    // "Open" button eligibility — includes BPE-wrapped
+      if (e.realAddr % 4 !== 0) warnAlign = true;
+    });
+  } else if (magic === 'DPK8' || magic === 'EPK8'){
+    kind = 'DPK8';
+    const headerFirstRow = 2048, headerSize = 16384;
+    const nameSize = 8, offSize = magic==='DPK8' ? 2 : 4, sizeSize = magic==='DPK8' ? 2 : 4;
+    const offsetDiv = magic==='DPK8' ? 3 : 4;
+    const valueRange = magic==='DPK8' ? 16383 : 65535;
+    let cursor = base + headerFirstRow;
+    let numberOfFiles = 0;
+    while (cursor < base + headerSize){
+      if (numberOfFiles === 0){
+        const nameBytes = [];
+        const nameFieldStart = cursor;
+        for (let i=0;i<nameSize/2;i++) nameBytes.push(view.getUint8(cursor+i));
+        cursor += nameSize/2;
+        const addrFieldOffset = cursor;
+        const sizeFieldOffset = cursor + offSize;
+        const off = readUint(view, cursor, offSize, be);
+        const size = readUint(view, sizeFieldOffset, sizeSize, be);
+        cursor += offSize + sizeSize;
+        if (nameBytes.every(b=>b===0)) break;
+        numberOfFiles = Math.floor((off & valueRange) / offsetDiv);
+        entries.push({rawName:nameBytes, off, size, isDir:true, sizeField:{offset:sizeFieldOffset, len:sizeSize}, addrField:{offset:addrFieldOffset, len:offSize}, nameField:{offset:nameFieldStart, len:nameSize/2}});
+        continue;
+      }
+      const nameBytes = [];
+      const nameFieldStart = cursor;
+      for (let i=0;i<nameSize;i++) nameBytes.push(view.getUint8(cursor+i));
+      const addrFieldOffset = cursor + nameSize;
+      const sizeFieldOffset = cursor + nameSize + offSize;
+      const off = readUint(view, addrFieldOffset, offSize, be);
+      const size = readUint(view, sizeFieldOffset, sizeSize, be);
+      cursor += nameSize + offSize + sizeSize;
+      if (nameBytes.every(b=>b===0)) break;
+      entries.push({rawName:nameBytes, off, size, isDir:false, sizeField:{offset:sizeFieldOffset, len:sizeSize}, addrField:{offset:addrFieldOffset, len:offSize}, nameField:{offset:nameFieldStart, len:nameSize}});
+      numberOfFiles--;
+    }
+    tocEnd = base + headerSize;
+    entries.forEach(e => {
+      e.realAddr = base + headerSize + e.off * 2048;
+      e.outSize = e.size * 256;
+      e.kind = 'DPK8';
+      e.name = bytesToAsciiName(e.rawName);
+      e.ext = e.isDir ? '' : magicExt(view, e.realAddr, len);
+      e.nestedMagic = e.isDir ? null : magicAt(view, e.realAddr, len);
+      e.isBpeContainer = !e.isDir && e.nestedMagic === 'BPE ';
+      e.isRealContainer = !e.isDir && KNOWN_MAGICS.includes(e.nestedMagic);
+      e.isContainer = e.isRealContainer || e.isBpeContainer;
+      if (!e.isDir && e.realAddr % 4 !== 0) warnAlign = true;
+    });
+  } else if (magic === 'EPAC'){
+    // EPAC: a recursive directory tree packed into a fixed 16KB header table (same 2048-byte
+    // first row and 16KB total size as DPK8/EPK8). Every node — directory or file — is a
+    // uniform 12-byte record: name(4 ASCII) + v1(4) + v2(4). A record is a DIRECTORY when
+    // v2===0, in which case v1 = childCount*3 and its children follow immediately, depth-first
+    // (so a directory can hold a mix of files and sub-directories). A record is a FILE when
+    // v2!==0: v1 = data offset in 2048-byte blocks from this container's fixed 16KB data base,
+    // v2 = size in 256-byte units. The count of top-level directories lives at header+0xC.
+    kind = 'EPAC';
+    const headerFirstRow = 2048, headerSize = 16384, recLen = 12, offsetDiv = 3;
+    const dataBase = base + headerSize;
+    const rootCount = readUint(view, base + 0xC, 4, be);
+    if (rootCount < 0 || rootCount > 100000) throw new Error('EPAC root directory count parsed as ' + rootCount + ' — try flipping byte order.');
+    let cursor = base + headerFirstRow;
+    let guardCount = 0;
+    const pathStack = [];
+    function parseNode(depth){
+      if (++guardCount > 500000) throw new Error('EPAC tree exceeded a sane record limit — try flipping byte order.');
+      if (depth > 64) throw new Error('EPAC tree nesting is implausibly deep — try flipping byte order.');
+      if (cursor + recLen > base + headerSize) throw new Error('EPAC tree runs past its fixed 16KB header table — try flipping byte order.');
+      const nameFieldStart = cursor;
+      const nameBytes = [0,1,2,3].map(i => view.getUint8(cursor+i));
+      const v1Offset = cursor + 4, v2Offset = cursor + 8;
+      const v1 = readUint(view, v1Offset, 4, be);
+      const v2 = readUint(view, v2Offset, 4, be);
+      const leafName = bytesToAsciiName(nameBytes);
+      cursor += recLen;
+      if (v2 === 0){
+        entries.push({ isDir:true, name: (pathStack.concat([leafName])).join('\\'), leafName, nameField:{offset:nameFieldStart, len:4}, addrField:{offset:v1Offset, len:4}, sizeField:{offset:v2Offset, len:4} });
+        const childCount = Math.floor(v1 / offsetDiv);
+        pathStack.push(leafName);
+        for (let i=0;i<childCount;i++) parseNode(depth+1);
+        pathStack.pop();
+      } else {
+        entries.push({ isDir:false, leafName, name: (pathStack.concat([leafName])).join('\\'), off:v1, size:v2, nameField:{offset:nameFieldStart, len:4}, addrField:{offset:v1Offset, len:4}, sizeField:{offset:v2Offset, len:4} });
+      }
+    }
+    for (let i=0;i<rootCount;i++) parseNode(0);
+    tocEnd = dataBase;
+    entries.forEach(e => {
+      if (e.isDir) return;
+      e.realAddr = dataBase + e.off * 2048;
+      e.outSize = e.size * 256;
+      e.kind = 'DPK8'; // reuse DPK8's inject/addr-bump machinery: same 2048/256 unit convention
+      e.ext = magicExt(view, e.realAddr, len);
+      e.nestedMagic = magicAt(view, e.realAddr, len);
+      e.isBpeContainer = e.nestedMagic === 'BPE ';
+      e.isRealContainer = KNOWN_MAGICS.includes(e.nestedMagic);
+      e.isContainer = e.isRealContainer || e.isBpeContainer;
+      if (e.realAddr % 4 !== 0) warnAlign = true;
+    });
+  } else if (magic === 'HSPC'){
+    // HSPC: a 64-byte header, then two index tables, then the file data — all inside a fixed
+    // 16KB header area, with everything addressed in 2048-byte blocks from the container start
+    // (absolute within the container, NOT relative to the end of the header like EPK8/EPAC).
+    // Header (u32 fields): 0x04 version (0x7DA seen) · 0x08 0x40 · 0x0C block size (2048)
+    //   0x10 unknown id (left untouched) · 0x14 name-table start (blocks) · 0x18 name-table bytes
+    //   0x1C file-table start (blocks) · 0x20 file-table bytes · 0x24 container size in blocks
+    //   0x28 unknown (left untouched) · 0x2C = 0x24 + 1 in the sample · 0x38 entry count
+    //   0x3C data bytes (= container size − 16KB header)
+    // Name-table record (20 bytes): 64-bit name hash · u32 0 · u32 byte offset into the file table
+    //   · u32 0xFFFFFFFF. No text names are stored, only the hash.
+    // File-table record (12 bytes): offset (2048-byte blocks) · size (256-byte units) · flags
+    //   (0x000C0000 on every entry in the sample; preserved as-is).
+    kind = 'HSPC';
+    const BLOCK = 2048, NAME_REC = 20, FILE_REC = 12;
+    if (base + 0x40 > len) throw new Error('HSPC header is truncated — not enough data at this offset.');
+    const blockSize = readUint(view, base + 0x0C, 4, be);
+    if (blockSize !== BLOCK) throw new Error('HSPC block size parsed as ' + blockSize + ' (expected 2048) — try flipping byte order.');
+    const nameStart   = readUint(view, base + 0x14, 4, be) * BLOCK;
+    const nameBytes   = readUint(view, base + 0x18, 4, be);
+    const fileStart   = readUint(view, base + 0x1C, 4, be) * BLOCK;
+    const fileBytes   = readUint(view, base + 0x20, 4, be);
+    const totalBlocks = readUint(view, base + 0x24, 4, be);
+    if (nameBytes % NAME_REC !== 0 || fileBytes % FILE_REC !== 0)
+      throw new Error('HSPC table sizes (' + nameBytes + ' / ' + fileBytes + ' bytes) are not multiples of their record lengths (20 / 12) — try flipping byte order.');
+    const nameCount = nameBytes / NAME_REC, fileCount = fileBytes / FILE_REC;
+    if (nameCount > 200000 || fileCount > 200000) throw new Error('HSPC entry count parsed as ' + Math.max(nameCount, fileCount) + ' — try flipping byte order.');
+    if (base + nameStart + nameBytes > len || base + fileStart + fileBytes > len) throw new Error('HSPC index tables run past end of file — try flipping byte order.');
+
+    // Map file-table row -> its name-hash record. The name table stores a byte offset into the
+    // file table, so this follows the pointer rather than assuming both tables are in the same order.
+    const hashByRow = new Map();
+    for (let i = 0; i < nameCount; i++){
+      const rec = base + nameStart + i * NAME_REC;
+      const ptr = readUint(view, rec + 12, 4, be);
+      if (ptr % FILE_REC !== 0 || ptr / FILE_REC >= fileCount) continue;
+      const row = ptr / FILE_REC;
+      if (hashByRow.has(row)) continue; // first name wins if two records point at the same row
+      const hb = [];
+      for (let k = 0; k < 8; k++) hb.push(view.getUint8(rec + k));
+      hashByRow.set(row, { bytes: hb, offset: rec });
+    }
+
+    const seenNames = {};
+    for (let j = 0; j < fileCount; j++){
+      const rec = base + fileStart + j * FILE_REC;
+      const off  = readUint(view, rec, 4, be);
+      const size = readUint(view, rec + 4, 4, be);
+      const h = hashByRow.get(j);
+      const hashHex = h ? h.bytes.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase() : null;
+      let name = hashHex || ('file' + String(j).padStart(6, '0'));
+      if (seenNames[name] !== undefined){ seenNames[name]++; name += '[' + seenNames[name] + ']'; } else seenNames[name] = 0;
+      entries.push({ isDir:false, off, size, name, hashHex, hashField: h ? { offset: h.offset, len: 8 } : null,
+                     addrField:{offset: rec, len: 4}, sizeField:{offset: rec + 4, len: 4} });
+    }
+    entries.forEach(e => {
+      e.realAddr = base + e.off * BLOCK;
+      e.outSize = e.size * 256;
+      e.kind = 'HSPC';
+      e.ext = magicExt(view, e.realAddr, len);
+      e.nestedMagic = magicAt(view, e.realAddr, len);
+      e.isBpeContainer = e.nestedMagic === 'BPE ';
+      e.isRealContainer = KNOWN_MAGICS.includes(e.nestedMagic);
+      e.isContainer = e.isRealContainer || e.isBpeContainer;
+    });
+    // Data begins where the header area ends — i.e. at the lowest file offset (0x4000 in the sample).
+    tocEnd = entries.length ? entries.reduce((m, e) => Math.min(m, e.realAddr), Infinity) : base + fileStart + fileBytes;
+    // Fields that track the container's overall size, so growth/shrink can keep them in step.
+    hspc = { blockFields: [base + 0x24, base + 0x2C], dataSizeField: base + 0x3C, totalBytes: totalBlocks * BLOCK };
+  } else {
+    throw new Error(`Unrecognized header "${magic}" at this offset. Supported: PAC, PACH, DPK8, EPK8, EPAC, HSPC.`);
+  }
+  return {magic, kind, entries, tocEnd, warnAlign, hspc};
+}
+
+function renderCurrent(){
+  if (!masterBuffer) return;
+  const top = navStack[navStack.length-1];
+  let parsed;
+  try { parsed = parseContainerAt(top.offset); }
+  catch(err){ return showError(err.message); }
+  paint(parsed);
+}
+
+function paint(parsed){
+  const {magic, kind, entries, tocEnd, warnAlign} = parsed;
+  const visible = entries.filter(e => !e.isDir);
+
+  let html = '';
+
+  html += `<div class="crumbs" id="crumbs"></div>`;
+
+  if (dirty){
+    html += `<div class="toolbar-actions" style="margin-bottom:14px;"><button class="ok" id="dlModified">⬇ Download modified archive</button></div>`;
+  }
+
+  html += `<div class="stats">
+    <div class="stat"><div class="k">Format</div><div class="v">${magic.trim()||magic}</div></div>
+    <div class="stat"><div class="k">Entries</div><div class="v">${visible.length}</div></div>
+    <div class="stat"><div class="k">TOC ends at</div><div class="v">0x${tocEnd.toString(16).toUpperCase()}</div></div>
+    <div class="stat${warnAlign?' warn':''}"><div class="k">Alignment</div><div class="v">${warnAlign?'Issues found':'OK'}</div></div>
+  </div>`;
+
+  html += `<div class="toolbar">
+    <h2>Contents <span class="count">(${visible.length})</span></h2>
+    <div class="toolbar-actions">
+      <button id="addFile" ${(kind==='PAC' || magic==='EPK8') ? '' : 'disabled title="Not supported for this format — see note below"'}>+ Add file</button>
+      <button id="extractAll" ${visible.length? '' : 'disabled'}>Extract all (.zip)</button>
+    </div>
+  </div>`;
+
+  if (!visible.length){
+    html += `<div class="empty">No extractable entries found.</div>`;
+  } else {
+    html += `<table><thead><tr><th>Name</th><th>Address</th><th>Size</th><th>Ext</th><th></th></tr></thead><tbody>`;
+    visible.forEach((e, i) => {
+      html += `<tr>
+        <td class="name-cell" data-label="Name">${e.name}${e.isContainer?`<span class="ctag">${e.isBpeContainer ? 'BPE→?' : e.nestedMagic.trim()}</span>`:''}</td>
+        <td data-label="Address" class="addr">0x${e.realAddr.toString(16).toUpperCase()}</td>
+        <td data-label="Size">${humanSize(e.outSize)}</td>
+        <td data-label="Ext" class="ext">${e.ext||'—'}</td>
+        <td class="action-cell actions-cell" data-label="">
+          ${e.isContainer ? `<button class="rowbtn primary" data-act="open" data-idx="${i}">${e.isBpeContainer ? 'Open (BPE)' : 'Open'}</button>` : ''}
+          <button class="rowbtn" data-act="rename" data-idx="${i}">Rename</button>
+          <button class="rowbtn" data-act="extract" data-idx="${i}">Extract</button>
+          <button class="rowbtn" data-act="uncompress" data-idx="${i}">Uncompress</button>
+          <button class="rowbtn" data-act="inject" data-idx="${i}">Inject</button>
+          <button class="rowbtn" data-act="injectbpe" data-idx="${i}">Inject as BPE</button>
+          ${isImageCandidate(e) ? `<button class="rowbtn primary" data-act="imgpreview" data-idx="${i}">View Image</button>` : ''}
+          ${isTplCandidate(e) ? `<button class="rowbtn primary" data-act="tplpreview" data-idx="${i}">TPL Preview</button><button class="rowbtn primary" data-act="tplinject" data-idx="${i}">Inject PNG as TPL</button>` : ''}
+          <button class="rowbtn danger" data-act="delete" data-idx="${i}" ${(kind==='PAC' || magic==='EPK8') ? '' : 'disabled title="Not supported for this format — see note below"'}>Delete</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  outputEl.innerHTML = html;
+  renderCrumbs();
+
+  outputEl.querySelectorAll('[data-act]').forEach(btn => {
+    const e = visible[Number(btn.dataset.idx)];
+    btn.addEventListener('click', () => {
+      const act = btn.dataset.act;
+      if (act === 'open') openContainer(e);
+      else if (act === 'rename') startRename(e);
+      else if (act === 'extract') downloadEntry(e);
+      else if (act === 'uncompress') startUncompress(e);
+      else if (act === 'inject') startInject(e);
+      else if (act === 'injectbpe') startInjectBPE(e);
+      else if (act === 'imgpreview') startImagePreview(e);
+      else if (act === 'tplpreview') startTplPreview(e);
+      else if (act === 'tplinject') startTplInjectPng(e);
+      else if (act === 'delete') startDelete(e, parsed);
+    });
+  });
+
+  const addBtn = $('addFile');
+  if (addBtn) addBtn.addEventListener('click', () => startAddFile(parsed));
+
+  const allBtn = $('extractAll');
+  if (allBtn) allBtn.addEventListener('click', () => extractAllZip(visible));
+
+  const dlBtn = $('dlModified');
+  if (dlBtn) dlBtn.addEventListener('click', async () => {
+    // Downloading always ships the real (level 0) file, so any still-open BPE-decompressed
+    // layers need their edits recompressed and written back into it first.
+    await navigateTo(0);
+    downloadModifiedArchive();
+  });
+}
+
+function renderCrumbs(){
+  const el = $('crumbs');
+  if (!el) return;
+  el.innerHTML = navStack.map((n,i) => {
+    const isLast = i === navStack.length-1;
+    return `<span class="seg${isLast?' current':''}" data-idx="${i}">${n.label}</span>` + (isLast?'':'<span class="sep">▸</span>');
+  }).join('');
+  el.querySelectorAll('.seg').forEach(seg => {
+    seg.addEventListener('click', async () => {
+      const idx = Number(seg.dataset.idx);
+      if (idx === navStack.length-1) return;
+      await navigateTo(idx);
+    });
+  });
+}
+
+// Jumps the breadcrumb trail back to navStack[idx], flushing (recompressing + writing back) any
+// BPE-decompressed layers that are being left behind, deepest first, so their edits aren't lost.
+async function navigateTo(idx){
+  const targetLevel = navStack[idx].bufLevel;
+  for (let lvl = bufferStack.length-1; lvl > targetLevel; lvl--){
+    await flushBufferLevel(lvl);
+  }
+  navStack = navStack.slice(0, idx+1);
+  bufferStack.length = targetLevel + 1;
+  syncToTop();
+  renderCurrent();
+}
+
+// Recompresses a decompressed BPE layer (if it was actually edited) and writes it back into its
+// parent layer's buffer via the same grow-capable inject engine used everywhere else, updating
+// the parent layer's own dirty flag so the write keeps propagating outward when it, in turn, is
+// later flushed. No-op if the layer was only ever browsed and never modified.
+async function flushBufferLevel(level){
+  const layer = bufferStack[level];
+  if (!layer || !layer.dirty || !layer.backing) return;
+  const parentLevel = layer.backing.parentLevel;
+  const parent = bufferStack[parentLevel];
+  const raw = new Uint8Array(layer.buffer);
+  const compressed = bpeCompress(raw);
+  const finalBytes = layer.backing.wasWrapped ? wrapBpe(compressed, raw.length, layer.backing.bpeField2) : compressed;
+  syncToLevel(parentLevel);
+  const backingEntry = {
+    realAddr: layer.backing.realAddr, outSize: layer.backing.outSize,
+    sizeField: layer.backing.sizeField, kind: layer.backing.kind
+  };
+  await performInject(backingEntry, finalBytes, {silent:true});
+  parent.buffer = masterBuffer;
+  parent.view = masterView;
+  parent.dirty = true;
+  layer.backing.outSize = backingEntry.outSize;
+  layer.dirty = false;
+}
+
+function openContainer(e){
+  if (e.isBpeContainer) return openBpeContainer(e);
+  navStack.push({label: e.name + (e.ext && e.ext !== '.dat' ? e.ext : ''), offset: e.realAddr, bufLevel: activeBufLevel});
+  renderCurrent();
+}
+
+// Opens an entry whose data is a "BPE " wrapped stream by decompressing it into a brand-new
+// scratch buffer and pushing it as a new layer on bufferStack — from here on it browses, renames,
+// injects, deletes, and adds entries exactly like a real top-level file, because every one of
+// those routines only ever touches the current masterBuffer/masterView, which now point at this
+// layer. Nothing is written back to the real file until this layer is left (via breadcrumb
+// navigation) or the modified archive is downloaded — see navigateTo/flushBufferLevel.
+async function openBpeContainer(e){
+  let payload;
+  try { payload = decompressBpePayload(e); }
+  catch(err){ return alertModal('Could not decompress', `This entry is BPE-compressed but didn't decode cleanly:\n${err.message}`); }
+  const bytes = payload.bytes;
+  const magic = bytes.length >= 4 ? String.fromCharCode(bytes[0],bytes[1],bytes[2],bytes[3]) : null;
+  if (!KNOWN_MAGICS.includes(magic)){
+    return alertModal('Not a supported archive', `Decompressed ${humanSize(bytes.length)} of data, but it doesn't start with a recognized header (got "${magic || '?'}"). Supported: PAC, PACH, DPK8, EPK8, EPAC, HSPC.`);
+  }
+  const vBuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const vView = new DataView(vBuf);
+  const parentLevel = activeBufLevel;
+  bufferStack.push({
+    buffer: vBuf, view: vView, dirty: false,
+    backing: {
+      parentLevel, realAddr: e.realAddr, outSize: e.outSize, sizeField: e.sizeField, kind: e.kind,
+      wasWrapped: payload.wasBpe, bpeField2: payload.bpeField2
+    }
+  });
+  const newLevel = bufferStack.length - 1;
+  navStack.push({label: (e.name + (e.ext && e.ext !== '.dat' ? e.ext : '')) + ' [BPE→' + magic.trim() + ']', offset: 0, bufLevel: newLevel});
+  syncToLevel(newLevel);
+  renderCurrent();
+}
+
+function showModal({title, message, showInput=false, defaultValue='', okLabel='OK', cancelLabel='Cancel', showCancel=true}){
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <h3>${title}</h3>
+        <p>${message}</p>
+        ${showInput ? `<input type="text" class="modal-input" spellcheck="false">` : ''}
+        <div class="modal-actions">
+          ${showCancel ? `<button class="modal-cancel">${cancelLabel}</button>` : ''}
+          <button class="modal-ok primary">${okLabel}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('.modal-input');
+    if (input){ input.value = defaultValue; input.focus(); input.select(); }
+    function cleanup(val){ overlay.remove(); resolve(val); }
+    const cancelBtn = overlay.querySelector('.modal-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', () => cleanup(null));
+    overlay.querySelector('.modal-ok').addEventListener('click', () => cleanup(showInput ? input.value : true));
+    if (input) input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') cleanup(input.value);
+      if (e.key === 'Escape') cleanup(null);
+    });
+    overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(null); });
+  });
+}
+function promptModal(title, message, defaultValue){ return showModal({title, message, showInput:true, defaultValue}); }
+function confirmModal(title, message){ return showModal({title, message, showInput:false}).then(v => v !== null); }
+function alertModal(title, message){ return showModal({title, message, showInput:false, showCancel:false}); }
+
+function writeAsciiPadded(view, offset, len, text){
+  const bytes = new Uint8Array(len).fill(0x20); // original reader strips spaces, so pad with them
+  for (let i=0;i<Math.min(text.length, len);i++) bytes[i] = text.charCodeAt(i) & 0xFF;
+  for (let i=0;i<len;i++) view.setUint8(offset+i, bytes[i]);
+}
+
+async function startRename(entry){
+  if (entry.kind === 'DPK8'){
+    const len = entry.nameField.len;
+    const current = entry.leafName !== undefined ? entry.leafName : entry.name;
+    const input = await promptModal('Rename entry', `Max ${len} characters.`, current);
+    if (input === null) return;
+    if (input.length > len){
+      const ok = await confirmModal('Name too long', `"${input}" is ${input.length} characters — this slot only stores ${len}.\nTruncate to "${input.slice(0,len)}"?`);
+      if (!ok) return;
+    }
+    writeAsciiPadded(masterView, entry.nameField.offset, len, input);
+  } else if (entry.kind === 'HSPC'){
+    if (!entry.hashField){ await alertModal('No name record', 'No name-table record points at this entry, so there is no hash to edit.'); return; }
+    const input = await promptModal('Set name hash', 'HSPC entries store a 64-bit name hash instead of a text name.\nEnter exactly 16 hex digits, in the same byte order they appear in the file.', entry.hashHex);
+    if (input === null) return;
+    const cleaned = input.trim().replace(/^0x/i, '').replace(/\s+/g, '');
+    if (!/^[0-9a-fA-F]{16}$/.test(cleaned)){ await alertModal('Invalid value', 'Enter exactly 16 hex digits, e.g. 37B62BB77AD9B6D5.'); return; }
+    for (let i = 0; i < 8; i++) masterView.setUint8(entry.hashField.offset + i, parseInt(cleaned.substr(i*2, 2), 16));
+  } else if (entry.kind === 'PAC'){
+    const maxHexDigits = entry.filenoField.len * 2;
+    const input = await promptModal('Set numeric id', `PAC/PACH entries don't store text names, only a numeric id.\nHex, up to ${maxHexDigits} digits.`, entry.fileno.toString(16).toUpperCase());
+    if (input === null) return;
+    const cleaned = input.trim().replace(/^0x/i, '');
+    if (!/^[0-9a-fA-F]+$/.test(cleaned)) { await alertModal('Invalid value', 'Enter a valid hex value, e.g. 1A2B.'); return; }
+    const value = parseInt(cleaned, 16);
+    const maxVal = Math.pow(2, entry.filenoField.len * 8) - 1;
+    if (value > maxVal) { await alertModal('Value too large', `Max is ${maxVal.toString(16).toUpperCase()} for a ${entry.filenoField.len}-byte id.`); return; }
+    writeUint(masterView, entry.filenoField.offset, entry.filenoField.len, value, endianSel.value === 'be');
+  }
+  markDirty();
+  renderCurrent();
+}
+
+function bpeCompressBlock(block, usedFlags, threshold){
+  let arr = block.slice();
+  const leftcode = new Uint8Array(256);
+  const rightcode = new Uint8Array(256);
+  for (let i=0;i<256;i++) leftcode[i] = i;
+  let code = 256;
+  while (true){
+    let chosen = -1;
+    for (code = code-1; code >= 0; code--){
+      if (leftcode[code] === code && !usedFlags[code]){ chosen = code; break; }
+    }
+    if (chosen < 0) break;
+    code = chosen;
+    if (arr.length < 2) break;
+
+    const counts = new Map();
+    for (let i=0;i<arr.length-1;i++){
+      const key = arr[i]*256 + arr[i+1];
+      counts.set(key, (counts.get(key)||0) + 1);
+    }
+    let bestKey = -1, bestCount = 2; // mirrors the original's "best=2" seed, so counts of 1-2 never qualify
+    for (const [key, cnt] of counts){ if (cnt > bestCount){ bestCount = cnt; bestKey = key; } }
+    if (bestKey < 0 || bestCount < threshold) break;
+
+    const leftch = Math.floor(bestKey/256), rightch = bestKey%256;
+    const newArr = [];
+    for (let i=0;i<arr.length;i++){
+      if (i < arr.length-1 && arr[i] === leftch && arr[i+1] === rightch){ newArr.push(code); i++; }
+      else newArr.push(arr[i]);
+    }
+    arr = newArr;
+    leftcode[code] = leftch;
+    rightcode[code] = rightch;
+  }
+  return {leftcode, rightcode, data: arr};
+}
+
+function bpeWriteBlock(leftcode, rightcode, data){
+  const out = [];
+  let c = 0;
+  while (c < 256){
+    let len;
+    if (leftcode[c] === c){
+      len = 1; c++;
+      while (len < 127 && c < 256 && leftcode[c] === c){ len++; c++; }
+      out.push(len + 127);
+      len = 0;
+      if (c === 256) break;
+    } else {
+      len = 0; c++;
+      while ((len < 127 && c < 256 && leftcode[c] !== c) || (len < 125 && c < 254 && leftcode[c+1] !== c+1)){
+        len++; c++;
+      }
+      out.push(len);
+      c -= (len + 1);
+    }
+    for (let i=0; i<=len; i++){
+      out.push(leftcode[c]);
+      if (leftcode[c] !== c) out.push(rightcode[c]);
+      c++;
+    }
+  }
+  const size = data.length;
+  out.push(size % 256);        // low byte first, then high (matches the real compiled bpe.exe)
+  out.push(Math.floor(size/256));
+  for (const b of data) out.push(b);
+  return out;
+}
+
+function bpeCompress(bytes, opts={}){
+  const blockSize = opts.blockSize || 5000;
+  const maxChars = opts.maxChars || 200;
+  const threshold = opts.threshold || 3;
+  const out = [];
+  let pos = 0;
+  const n = bytes.length;
+  if (n === 0) return new Uint8Array(0);
+  while (pos < n){
+    const block = [];
+    const usedFlags = new Uint8Array(256);
+    let used = 0;
+    while (block.length < blockSize && used < maxChars && pos < n){
+      const c = bytes[pos++];
+      block.push(c);
+      if (!usedFlags[c]){ usedFlags[c] = 1; used++; }
+    }
+    const {leftcode, rightcode, data} = bpeCompressBlock(block, usedFlags, threshold);
+    out.push(...bpeWriteBlock(leftcode, rightcode, data));
+  }
+  return Uint8Array.from(out);
+}
+
+function bpeDecompress(inputBytes){
+  const len = inputBytes.length;
+  let pos = 0;
+  function getc(){
+    if (pos >= len) throw new Error('Unexpected end of data while decompressing — this entry might not actually be BPE-compressed.');
+    return inputBytes[pos++];
+  }
+  function tryGetc(){ return pos < len ? inputBytes[pos++] : -1; }
+
+  const outParts = [];
+  let count = tryGetc();
+  let blockGuard = 0;
+  while (count !== -1){
+    if (++blockGuard > 1000000) throw new Error('Too many blocks — aborting, this is probably not BPE data.');
+    const left = new Uint8Array(256);
+    const right = new Uint8Array(256);
+    for (let i=0;i<256;i++) left[i] = i;
+
+    let c = 0;
+    while (true){
+      if (count > 127){ c += count - 127; count = 0; }
+      if (c >= 256) break;
+      for (let i=0; i<=count && c<256; i++, c++){
+        left[c] = getc();
+        if (c !== left[c]) right[c] = getc();
+      }
+      if (c >= 256) break;
+      count = getc();
+    }
+
+    const b1 = getc(), b2 = getc(); // low byte first, then high byte (verified against the real bpe.exe binary)
+    let size = 256*b2 + b1;
+
+    const stack = [];
+    const out = [];
+    let steps = 0;
+    while (true){
+      let ch;
+      if (stack.length){
+        ch = stack.pop();
+      } else {
+        if (size === 0) break;
+        size--;
+        ch = getc();
+      }
+      if (ch === left[ch]) out.push(ch);
+      else { stack.push(right[ch]); stack.push(left[ch]); }
+      if (++steps > 50000000) throw new Error('Decompression ran too long — aborting, this is probably not BPE data (or byte order is flipped).');
+    }
+    outParts.push(Uint8Array.from(out));
+    count = tryGetc();
+  }
+
+  const total = outParts.reduce((a,p)=>a+p.length, 0);
+  const result = new Uint8Array(total);
+  let off = 0;
+  for (const p of outParts){ result.set(p, off); off += p.length; }
+  return result;
+}
+
+async function startUncompress(entry){
+  const raw = new Uint8Array(sliceEntry(entry));
+  let payload = raw;
+  let hadWrapper = false;
+
+  if (raw.length >= 16 && raw[0]===0x42 && raw[1]===0x50 && raw[2]===0x45 && raw[3]===0x20){ // "BPE "
+    const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+    const compressedLen = dv.getUint32(8, true);
+    const end = Math.min(16 + compressedLen, raw.length);
+    payload = raw.slice(16, end);
+    hadWrapper = true;
+  }
+
+  let result;
+  try { result = bpeDecompress(payload); }
+  catch(err){
+    await alertModal('Decompression failed', hadWrapper
+      ? `Found and stripped a "BPE " wrapper header, but the data after it still didn't decode:\n${err.message}`
+      : err.message);
+    return;
+  }
+
+  const blob = new Blob([result]);
+  const guessedExt = magicExt(new DataView(result.buffer), 0, result.length);
+  const outName = entry.name + (guessedExt && guessedExt !== '.dat' ? guessedExt : '.decompressed');
+  await saveBlobOrDownload(blob, outName);
+  await alertModal('Uncompressed', `${humanSize(raw.length)} → ${humanSize(result.length)}${hadWrapper ? ' (BPE wrapper header stripped)' : ''}\n\nSaved as "${outName}".`);
+}
+
+// --- TPL (GameCube/Wii CI8 texture) support, ported from the standalone TPL Studio tool and
+// joined here so a TPL never has to leave the PAC inspector to be previewed or replaced. ---
+
+// Reads a CI8 TPL's headers out of an already-decompressed buffer and clones the exact image/
+// palette header bytes (hardware wrap/filter flags etc.) so a rebuilt TPL keeps them intact.
+function parseTplHeader(bytes){
+  const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const view = new DataView(buf);
+  if (view.byteLength < 20) throw new Error('Too small to contain a TPL header.');
+  const magic = view.getUint32(0, false);
+  if (magic !== 0x0020AF30) throw new Error('Bad magic — not a GameCube/Wii TPL (expected 0020AF30).');
+  const imageTableOffset = view.getUint32(8, false);
+  if (imageTableOffset + 8 > view.byteLength) throw new Error('Image table offset runs past end of data.');
+  const imageHeaderOffset = view.getUint32(imageTableOffset, false);
+  const paletteHeaderOffset = view.getUint32(imageTableOffset + 4, false);
+  if (imageHeaderOffset + 36 > view.byteLength) throw new Error('Image header runs past end of data.');
+  const imgHeaderBytes = new Uint8Array(buf, imageHeaderOffset, 36).slice();
+  const height = view.getUint16(imageHeaderOffset, false);
+  const width = view.getUint16(imageHeaderOffset + 2, false);
+  const texDataOffset = view.getUint32(imageHeaderOffset + 8, false);
+  if (width === 0 || height === 0 || width > 4096 || height > 4096) throw new Error(`Implausible dimensions (${width}x${height}).`);
+
+  let palette = [], palFormat = 2, palEntries = 0, palHeaderBytes = null;
+  if (paletteHeaderOffset > 0 && paletteHeaderOffset + 12 <= view.byteLength){
+    palHeaderBytes = new Uint8Array(buf, paletteHeaderOffset, 12).slice();
+    palEntries = view.getUint16(paletteHeaderOffset, false);
+    palFormat = view.getUint32(paletteHeaderOffset + 4, false);
+    const palDataOffset = view.getUint32(paletteHeaderOffset + 8, false);
+    palette = decodeTplPalette(view, palDataOffset, palEntries, palFormat);
+  }
+  if (!palette.length) throw new Error('No palette found — this tool only supports CI8 (indexed + palette) TPLs.');
+  if (texDataOffset + Math.ceil(width/8)*8 * Math.ceil(height/4)*4 > view.byteLength + 4096){
+    // generous slack allowance; renderTplToCanvas guards per-byte anyway
+  }
+  return {view, buf, width, height, texDataOffset, palette, palFormat, palEntries, imgHeaderBytes, palHeaderBytes};
+}
+
+function decodeTplPalette(view, offset, entries, format){
+  const palette = [];
+  let ptr = offset;
+  for (let i = 0; i < entries; i++){
+    if (ptr + 2 > view.byteLength) break;
+    const rawColor = view.getUint16(ptr, false);
+    ptr += 2;
+    let r=0, g=0, b=0, a=255;
+    if (format === 2){
+      if ((rawColor & 0x8000) === 0x8000){
+        r = ((rawColor >> 10) & 0x1F) << 3; g = ((rawColor >> 5) & 0x1F) << 3; b = (rawColor & 0x1F) << 3;
+      } else {
+        a = ((rawColor >> 12) & 0x7) << 5; r = ((rawColor >> 8) & 0xF) << 4; g = ((rawColor >> 4) & 0xF) << 4; b = (rawColor & 0xF) << 4;
+      }
+    } else {
+      r = ((rawColor >> 11) & 0x1F) << 3; g = ((rawColor >> 5) & 0x3F) << 2; b = (rawColor & 0x1F) << 3;
+    }
+    palette.push([r, g, b, a]);
+  }
+  return palette;
+}
+
+// De-swizzles CI8's 8x4-pixel-block tiled index data through the palette, straight onto a canvas ctx.
+function renderTplToCanvas(cctx, view, offset, width, height, palette){
+  const imgData = cctx.createImageData(width, height);
+  const rgba = imgData.data;
+  let bytePtr = offset;
+  for (let blockY = 0; blockY < height; blockY += 4){
+    for (let blockX = 0; blockX < width; blockX += 8){
+      for (let y = 0; y < 4; y++){
+        for (let x = 0; x < 8; x++){
+          const pixelX = blockX + x, pixelY = blockY + y;
+          if (bytePtr < view.byteLength){
+            const index = view.getUint8(bytePtr++);
+            const color = palette[index] || [0,0,0,255];
+            if (pixelX < width && pixelY < height){
+              const outIdx = (pixelY * width + pixelX) * 4;
+              rgba[outIdx] = color[0]; rgba[outIdx+1] = color[1]; rgba[outIdx+2] = color[2]; rgba[outIdx+3] = color[3];
+            }
+          }
+        }
+      }
+    }
+  }
+  cctx.putImageData(imgData, 0, 0);
+}
+
+// Given a fixed width/height/palFormat and cloned header bytes (from parseTplHeader), quantizes
+// RGBA pixel data into a <=256-color palette in that same format, re-swizzles it into CI8 index
+// data, and assembles a complete, freshly-laid-out TPL buffer around the cloned headers.
+function encodeCI8Tpl(imgData, width, height, palFormat, imgHeaderBytes, palHeaderBytes){
+  const colorFreq = new Map();
+  const transparentKey = "0,0,0,0";
+  for (let i = 0; i < imgData.length; i += 4){
+    const r = imgData[i], g = imgData[i+1], b = imgData[i+2], a = imgData[i+3];
+    let key;
+    if (a < 15 && palFormat === 2) key = transparentKey;
+    else if (palFormat === 1) key = `${r & 0xF8},${g & 0xFC},${b & 0xF8},255`;
+    else if (a >= 224) key = `${r & 0xF8},${g & 0xF8},${b & 0xF8},255`;
+    else key = `${r & 0xF0},${g & 0xF0},${b & 0xF0},${a & 0xE0}`;
+    colorFreq.set(key, (colorFreq.get(key) || 0) + 1);
+  }
+
+  const sortedColors = Array.from(colorFreq.entries()).sort((a, b) => b[1] - a[1]);
+  const uniqueColors = [];
+  const colorMap = new Map();
+  if (palFormat === 2){ uniqueColors.push({r:0,g:0,b:0,a:0}); colorMap.set(transparentKey, 0); }
+
+  let palIdx = uniqueColors.length;
+  for (let i = 0; i < sortedColors.length; i++){
+    if (palIdx >= 256) break;
+    if (sortedColors[i][0] === transparentKey) continue;
+    const [r,g,b,a] = sortedColors[i][0].split(',').map(Number);
+    uniqueColors.push({r,g,b,a});
+    colorMap.set(sortedColors[i][0], palIdx);
+    palIdx++;
+  }
+  while (uniqueColors.length < 256) uniqueColors.push({r:0,g:0,b:0,a:255});
+
+  const swizzledIndices = [];
+  for (let blockY = 0; blockY < height; blockY += 4){
+    for (let blockX = 0; blockX < width; blockX += 8){
+      for (let y = 0; y < 4; y++){
+        for (let x = 0; x < 8; x++){
+          const pX = blockX + x, pY = blockY + y;
+          if (pX < width && pY < height){
+            const idx = (pY * width + pX) * 4;
+            const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
+            if (a < 15 && palFormat === 2){ swizzledIndices.push(0); continue; }
+            let searchKey = (palFormat === 1)
+              ? `${r & 0xF8},${g & 0xFC},${b & 0xF8},255`
+              : ((a >= 224) ? `${r & 0xF8},${g & 0xF8},${b & 0xF8},255` : `${r & 0xF0},${g & 0xF0},${b & 0xF0},${a & 0xE0}`);
+            if (colorMap.has(searchKey)) swizzledIndices.push(colorMap.get(searchKey));
+            else {
+              let bestIdx = 0, minDiff = Infinity;
+              for (let c = (palFormat === 2 ? 1 : 0); c < 256; c++){
+                const pc = uniqueColors[c];
+                const dr = r - pc.r, dg = g - pc.g, db = b - pc.b;
+                const da = palFormat === 1 ? 0 : (a - pc.a);
+                const diff = (dr*dr*0.299) + (dg*dg*0.587) + (db*db*0.114) + (da*da*2.0);
+                if (diff < minDiff){ minDiff = diff; bestIdx = c; }
+              }
+              colorMap.set(searchKey, bestIdx);
+              swizzledIndices.push(bestIdx);
+            }
+          } else swizzledIndices.push(0);
+        }
+      }
+    }
+  }
+
+  const imgHeaderPos = 20;
+  const palHeaderPos = 56;          // 20 + 36 bytes for the image header
+  const realPalDataPos = 96;        // 32-byte aligned
+  const realTexDataPos = realPalDataPos + 512;
+  const totalFileSize = realTexDataPos + swizzledIndices.length;
+
+  const finalBuffer = new ArrayBuffer(totalFileSize);
+  const finalView = new DataView(finalBuffer);
+  const finalUint8 = new Uint8Array(finalBuffer);
+
+  finalView.setUint32(0, 0x0020AF30, false);
+  finalView.setUint32(4, 1, false);
+  finalView.setUint32(8, 12, false);
+  finalView.setUint32(12, imgHeaderPos, false);
+  finalView.setUint32(16, palHeaderPos, false);
+
+  finalUint8.set(imgHeaderBytes, imgHeaderPos);
+  if (palHeaderBytes) finalUint8.set(palHeaderBytes, palHeaderPos);
+
+  finalView.setUint32(imgHeaderPos + 8, realTexDataPos, false);
+  finalView.setUint32(palHeaderPos + 8, realPalDataPos, false);
+
+  let currentPalPtr = realPalDataPos;
+  for (let i = 0; i < 256; i++){
+    const c = uniqueColors[i];
+    let val = 0;
+    if (palFormat === 1){
+      val = (((c.r >> 3) & 0x1F) << 11) | (((c.g >> 2) & 0x3F) << 5) | ((c.b >> 3) & 0x1F);
+    } else {
+      if (c.a >= 224) val = 0x8000 | (((c.r >> 3) & 0x1F) << 10) | (((c.g >> 3) & 0x1F) << 5) | ((c.b >> 3) & 0x1F);
+      else val = (((c.a >> 5) & 0x07) << 12) | (((c.r >> 4) & 0x0F) << 8) | (((c.g >> 4) & 0x0F) << 4) | ((c.b >> 4) & 0x0F);
+    }
+    finalView.setUint16(currentPalPtr, val, false);
+    currentPalPtr += 2;
+  }
+  for (let i = 0; i < swizzledIndices.length; i++) finalView.setUint8(realTexDataPos + i, swizzledIndices[i]);
+
+  return new Uint8Array(finalBuffer);
+}
+
+// Returns an entry's data with a "BPE " wrapper stripped and decompressed first if present
+// (used both for TPL parsing and for opening a BPE-compressed nested container), otherwise
+// returns the raw bytes as-is. Throws if a BPE wrapper is present but doesn't decompress cleanly.
+function decompressBpePayload(entry){
+  const raw = new Uint8Array(sliceEntry(entry));
+  if (raw.length >= 16 && raw[0]===0x42 && raw[1]===0x50 && raw[2]===0x45 && raw[3]===0x20){ // "BPE "
+    const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+    const field2 = dv.getUint32(4, true);
+    const compressedLen = dv.getUint32(8, true);
+    const end = Math.min(16 + compressedLen, raw.length);
+    const payload = raw.slice(16, end);
+    const decompressed = bpeDecompress(payload); // throws on bad data
+    return {bytes: decompressed, wasBpe: true, bpeField2: field2};
+  }
+  return {bytes: raw, wasBpe: false, bpeField2: 256};
+}
+
+async function startTplPreview(entry){
+  let payload;
+  try { payload = decompressBpePayload(entry); }
+  catch(err){ return alertModal('Could not decompress', `This entry looked like BPE-compressed data but didn't decode cleanly:\n${err.message}`); }
+  let tpl;
+  try { tpl = parseTplHeader(payload.bytes); }
+  catch(err){ return alertModal('Not a TPL', (payload.wasBpe ? 'Decompressed the BPE wrapper, but the result ' : 'This entry ') + `doesn't look like a supported CI8 TPL:\n${err.message}`); }
+  openTplPreviewModal(entry, tpl, payload);
+}
+
+function openTplPreviewModal(entry, tpl, payload){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:560px;">
+      <h3>TPL Preview — ${entry.name}</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:4px;">
+        <div style="background:repeating-conic-gradient(#1a1b26 0% 25%, #202a2f 0% 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:var(--radius);padding:6px;max-width:260px;max-height:260px;overflow:auto;">
+          <canvas id="tplPreviewCanvas" style="image-rendering:pixelated;max-width:100%;display:block;"></canvas>
+        </div>
+        <table class="modal-input" style="all:unset;flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;font-size:12px;border-collapse:collapse;">
+          <tr><th style="text-align:left;color:var(--muted);font-weight:500;padding:3px 10px 3px 0;">Dimensions</th><td style="color:var(--accent2);">${tpl.width} × ${tpl.height}</td></tr>
+          <tr><th style="text-align:left;color:var(--muted);font-weight:500;padding:3px 10px 3px 0;">Palette format</th><td style="color:var(--accent2);">${tpl.palFormat===1?'RGB565 (1)':'RGB5A3 (2)'}</td></tr>
+          <tr><th style="text-align:left;color:var(--muted);font-weight:500;padding:3px 10px 3px 0;">Palette entries</th><td style="color:var(--accent2);">${tpl.palEntries}</td></tr>
+          <tr><th style="text-align:left;color:var(--muted);font-weight:500;padding:3px 10px 3px 0;">Source</th><td style="color:var(--accent2);">${payload.wasBpe ? 'BPE-compressed TPL' : 'Raw TPL'}</td></tr>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-close">Close</button>
+        <button class="modal-export">Export PNG</button>
+        <button class="modal-inject primary">Inject replacement PNG</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const cv = overlay.querySelector('#tplPreviewCanvas');
+  cv.width = tpl.width; cv.height = tpl.height;
+  renderTplToCanvas(cv.getContext('2d'), tpl.view, tpl.texDataOffset, tpl.width, tpl.height, tpl.palette);
+
+  function close(){ overlay.remove(); }
+  overlay.querySelector('.modal-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('.modal-export').addEventListener('click', () => {
+    saveDataUrlOrDownload(cv.toDataURL('image/png'), entry.name + '.png');
+  });
+  overlay.querySelector('.modal-inject').addEventListener('click', () => { close(); startTplInjectPng(entry); });
+}
+
+// --- Image viewing (TGA / DDS), decoded straight to RGBA in memory. Used by "View Image", which
+// works on BPE-wrapped entries without a separate Uncompress step and never modifies the archive.
+function isImageCandidate(e){ return e.ext === '.bpe' || e.ext === '.dds'; }
+
+function expand5(v){ return (v << 3) | (v >> 2); }
+
+// Uncompressed / RLE TGA: colour-mapped (1/9), true-colour (2/10) and greyscale (3/11), 8/15/16/24/32 bpp.
+function decodeTga(b){
+  if (b.length < 18) throw new Error('Too short to hold a TGA header.');
+  const idLen = b[0], cmType = b[1], imgType = b[2];
+  const cmStart = b[3] | (b[4] << 8), cmLen = b[5] | (b[6] << 8), cmDepth = b[7];
+  const w = b[12] | (b[13] << 8), h = b[14] | (b[15] << 8), bpp = b[16], desc = b[17];
+  if (![1,2,3,9,10,11].includes(imgType)) throw new Error('Unsupported TGA image type ' + imgType + '.');
+  if (cmType > 1 || ((imgType === 1 || imgType === 9) && cmType !== 1)) throw new Error('Inconsistent TGA colour-map flag.');
+  if (!w || !h || w > 16384 || h > 16384) throw new Error('Implausible TGA size ' + w + '×' + h + '.');
+  if (![8,15,16,24,32].includes(bpp)) throw new Error('Unsupported TGA depth ' + bpp + ' bpp.');
+  const indexed = imgType === 1 || imgType === 9, grey = imgType === 3 || imgType === 11, rle = imgType >= 9;
+  if (indexed && bpp !== 8 && bpp !== 16) throw new Error('Unsupported colour-mapped TGA index size.');
+  if (grey && bpp !== 8 && bpp !== 16) throw new Error('Unsupported greyscale TGA depth.');
+  const alphaBits = desc & 15;
+  const t = [0,0,0,255];
+  function color(off, depth){ // fills t from `depth`-bit BGR(A) / 555 data at b[off]
+    if (depth === 24){ t[0]=b[off+2]; t[1]=b[off+1]; t[2]=b[off]; t[3]=255; }
+    else if (depth === 32){ t[0]=b[off+2]; t[1]=b[off+1]; t[2]=b[off]; t[3]= alphaBits ? b[off+3] : 255; }
+    else { const v = b[off] | (b[off+1] << 8); t[0]=expand5((v>>10)&31); t[1]=expand5((v>>5)&31); t[2]=expand5(v&31); t[3]=(depth===16 && alphaBits===1 && !(v&0x8000)) ? 0 : 255; }
+  }
+  let pos = 18 + idLen;
+  let palette = null;
+  if (cmType === 1){
+    const cb = Math.ceil(cmDepth / 8);
+    if (![15,16,24,32].includes(cmDepth)) throw new Error('Unsupported TGA palette depth ' + cmDepth + '.');
+    if (pos + cmLen * cb > b.length) throw new Error('TGA palette runs past the end of the data.');
+    palette = new Array(cmLen);
+    for (let i = 0; i < cmLen; i++){ color(pos + i*cb, cmDepth); palette[i] = t.slice(); }
+    pos += cmLen * cb;
+  }
+  const pb = Math.ceil(bpp / 8), total = w * h;
+  const out = new Uint8ClampedArray(total * 4);
+  const topDown = (desc & 0x20) !== 0, rightToLeft = (desc & 0x10) !== 0;
+  let n = 0;
+  function readPx(off){
+    if (indexed){
+      const idx = (pb === 1 ? b[off] : (b[off] | (b[off+1] << 8))) - cmStart;
+      const c = palette[idx] || [0,0,0,255]; t[0]=c[0]; t[1]=c[1]; t[2]=c[2]; t[3]=c[3];
+    } else if (grey){ t[0]=t[1]=t[2]=b[off]; t[3]= pb === 2 ? b[off+1] : 255; }
+    else color(off, bpp);
+  }
+  function store(){
+    const r = Math.floor(n / w), x = n % w;
+    const dy = topDown ? r : h - 1 - r, dx = rightToLeft ? w - 1 - x : x;
+    const o = (dy * w + dx) * 4;
+    out[o]=t[0]; out[o+1]=t[1]; out[o+2]=t[2]; out[o+3]=t[3];
+    n++;
+  }
+  if (!rle){
+    if (pos + total * pb > b.length) throw new Error('TGA pixel data is truncated.');
+    while (n < total){ readPx(pos); pos += pb; store(); }
+  } else {
+    while (n < total){
+      if (pos >= b.length) throw new Error('TGA RLE data is truncated.');
+      const hd = b[pos++], cnt = (hd & 127) + 1;
+      if (hd & 128){
+        if (pos + pb > b.length) throw new Error('TGA RLE data is truncated.');
+        readPx(pos); pos += pb;
+        for (let i = 0; i < cnt && n < total; i++) store();
+      } else {
+        if (pos + cnt * pb > b.length) throw new Error('TGA RLE data is truncated.');
+        for (let i = 0; i < cnt && n < total; i++){ readPx(pos); pos += pb; store(); }
+      }
+    }
+  }
+  const kind = indexed ? 'colour-mapped' : (grey ? 'greyscale' : 'true-colour');
+  return { width: w, height: h, rgba: out, format: 'TGA', detail: bpp + '-bit ' + kind + (rle ? ', RLE' : '') + (bpp === 32 && !alphaBits ? ', alpha ignored' : '') };
+}
+
+// DDS: DXT1/DXT3/DXT5 (incl. via a DX10 header) and uncompressed 16/24/32-bit masked RGB(A). Top mip only.
+function decodeDds(b){
+  if (b.length < 128) throw new Error('Too short to hold a DDS header.');
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  if (dv.getUint32(4, true) !== 124) throw new Error('DDS header size is not 124.');
+  const h = dv.getUint32(12, true), w = dv.getUint32(16, true);
+  if (!w || !h || w > 16384 || h > 16384) throw new Error('Implausible DDS size ' + w + '×' + h + '.');
+  const pfFlags = dv.getUint32(80, true);
+  const fourcc = String.fromCharCode(b[84], b[85], b[86], b[87]);
+  const bits = dv.getUint32(88, true);
+  let masks = [dv.getUint32(92,true), dv.getUint32(96,true), dv.getUint32(100,true), dv.getUint32(104,true)];
+  let off = 128, bc = null, detail = '';
+  if (pfFlags & 4){
+    if (fourcc === 'DX10'){
+      if (b.length < 148) throw new Error('DX10 DDS header is truncated.');
+      const dxgi = dv.getUint32(128, true); off = 148;
+      if (dxgi === 71 || dxgi === 72) bc = 'DXT1';
+      else if (dxgi === 74 || dxgi === 75) bc = 'DXT3';
+      else if (dxgi === 77 || dxgi === 78) bc = 'DXT5';
+      else if (dxgi === 28 || dxgi === 29) { masks = [0xFF, 0xFF00, 0xFF0000, 0xFF000000]; }
+      else if (dxgi === 87 || dxgi === 91) { masks = [0xFF0000, 0xFF00, 0xFF, 0xFF000000]; }
+      else throw new Error('Unsupported DXGI format ' + dxgi + '.');
+      detail = 'DX10 format ' + dxgi;
+    } else if (fourcc === 'DXT1' || fourcc === 'DXT3' || fourcc === 'DXT5'){ bc = fourcc; detail = fourcc; }
+    else throw new Error('Unsupported DDS FourCC "' + fourcc + '".');
+  } else if (pfFlags & 0x40){
+    if (![16,24,32].includes(bits)) throw new Error('Unsupported uncompressed DDS depth ' + bits + ' bpp.');
+    detail = bits + '-bit uncompressed';
+  } else throw new Error('Unsupported DDS pixel format (flags 0x' + pfFlags.toString(16) + ').');
+
+  const out = new Uint8ClampedArray(w * h * 4);
+  if (bc){
+    const bw = (w + 3) >> 2, bh = (h + 3) >> 2, bs = bc === 'DXT1' ? 8 : 16;
+    if (off + bw * bh * bs > b.length) throw new Error('DDS pixel data is truncated.');
+    const col = [[0,0,0,255],[0,0,0,255],[0,0,0,255],[0,0,0,255]];
+    const al = new Array(8);
+    for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++){
+      const p = off + (by * bw + bx) * bs, cp = bc === 'DXT1' ? p : p + 8;
+      const c0 = b[cp] | (b[cp+1] << 8), c1 = b[cp+2] | (b[cp+3] << 8);
+      const rgb = v => [expand5((v>>11)&31) & 0xFF, ((((v>>5)&63) << 2) | (((v>>5)&63) >> 4)) & 0xFF, expand5(v&31) & 0xFF];
+      const a = rgb(c0), c = rgb(c1);
+      col[0] = [a[0],a[1],a[2],255]; col[1] = [c[0],c[1],c[2],255];
+      if (c0 > c1 || bc !== 'DXT1'){
+        col[2] = [Math.floor((2*a[0]+c[0])/3), Math.floor((2*a[1]+c[1])/3), Math.floor((2*a[2]+c[2])/3), 255];
+        col[3] = [Math.floor((a[0]+2*c[0])/3), Math.floor((a[1]+2*c[1])/3), Math.floor((a[2]+2*c[2])/3), 255];
+      } else {
+        col[2] = [(a[0]+c[0])>>1, (a[1]+c[1])>>1, (a[2]+c[2])>>1, 255];
+        col[3] = [0,0,0,0];
+      }
+      const cbits = (b[cp+4] | (b[cp+5] << 8) | (b[cp+6] << 16) | (b[cp+7] << 24)) >>> 0;
+      let a0 = 0, a1 = 0, lo = 0, hi = 0;
+      if (bc === 'DXT5'){
+        a0 = b[p]; a1 = b[p+1];
+        al[0] = a0; al[1] = a1;
+        if (a0 > a1) for (let i = 2; i < 8; i++) al[i] = Math.floor(((8-i)*a0 + (i-1)*a1) / 7);
+        else { for (let i = 2; i < 6; i++) al[i] = Math.floor(((6-i)*a0 + (i-1)*a1) / 5); al[6] = 0; al[7] = 255; }
+        lo = b[p+2] | (b[p+3] << 8) | (b[p+4] << 16); hi = b[p+5] | (b[p+6] << 8) | (b[p+7] << 16);
+      }
+      for (let i = 0; i < 16; i++){
+        const px = bx * 4 + (i & 3), py = by * 4 + (i >> 2);
+        if (px >= w || py >= h) continue;
+        const cc = col[(cbits >>> (2 * i)) & 3];
+        let alpha = cc[3];
+        if (bc === 'DXT3') alpha = ((b[p + (i >> 1)] >> ((i & 1) * 4)) & 15) * 17;
+        else if (bc === 'DXT5') alpha = al[i < 8 ? (lo >> (3*i)) & 7 : (hi >> (3*(i-8))) & 7];
+        const o = (py * w + px) * 4;
+        out[o] = cc[0]; out[o+1] = cc[1]; out[o+2] = cc[2]; out[o+3] = alpha;
+      }
+    }
+  } else {
+    const pb = bits ? bits / 8 : 4;
+    if (off + w * h * pb > b.length) throw new Error('DDS pixel data is truncated.');
+    const info = masks.map(m => {
+      if (!m) return null;
+      let sh = 0; while (!((m >>> sh) & 1)) sh++;
+      let n = 0; while ((m >>> (sh + n)) & 1) n++;
+      return { m: m >>> 0, sh, max: Math.pow(2, n) - 1 };
+    });
+    for (let i = 0; i < w * h; i++){
+      let v = 0; for (let k = pb - 1; k >= 0; k--) v = v * 256 + b[off + i*pb + k];
+      const o = i * 4;
+      for (let ch = 0; ch < 4; ch++){
+        const f = info[ch];
+        out[o+ch] = f ? Math.round((((v & f.m) >>> f.sh) / f.max) * 255) : (ch === 3 ? 255 : 0);
+      }
+    }
+  }
+  return { width: w, height: h, rgba: out, format: 'DDS', detail };
+}
+
+function decodeImageBytes(b){
+  if (b.length >= 4 && b[0]===0x44 && b[1]===0x44 && b[2]===0x53 && b[3]===0x20) return decodeDds(b);
+  try { return decodeTga(b); }
+  catch(err){
+    const head = Array.from(b.slice(0, 4)).map(x => x.toString(16).padStart(2,'0')).join(' ');
+    throw new Error('The data isn\'t a DDS (no "DDS " magic) and doesn\'t decode as a TGA either (' + err.message + ')\nFirst bytes: ' + (head || '(empty)'));
+  }
+}
+
+async function startImagePreview(entry){
+  let payload;
+  try { payload = decompressBpePayload(entry); }
+  catch(err){ return alertModal('Could not decompress', `This entry looked BPE-compressed but didn't decode cleanly:\n${err.message}`); }
+  let img;
+  try { img = decodeImageBytes(payload.bytes); }
+  catch(err){ return alertModal('Cannot preview', err.message); }
+  openImagePreviewModal(entry, img, payload);
+}
+
+function openImagePreviewModal(entry, img, payload){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const th = 'text-align:left;color:var(--muted);font-weight:500;padding:3px 10px 3px 0;', td = 'color:var(--accent2);';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:640px;">
+      <h3>Image Preview — ${entry.name}</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="background:repeating-conic-gradient(#1a1b26 0% 25%, #202a2f 0% 50%) 0 0/16px 16px;border:1px solid var(--line);border-radius:var(--radius);padding:6px;max-width:100%;max-height:60vh;overflow:auto;">
+          <canvas id="imgPreviewCanvas" style="max-width:100%;display:block;${img.width < 256 ? 'image-rendering:pixelated;' : ''}"></canvas>
+        </div>
+        <table class="modal-input" style="all:unset;flex:1;min-width:180px;font-family:'IBM Plex Mono',monospace;font-size:12px;border-collapse:collapse;">
+          <tr><th style="${th}">Format</th><td style="${td}">${img.format} — ${img.detail}</td></tr>
+          <tr><th style="${th}">Dimensions</th><td style="${td}">${img.width} × ${img.height}</td></tr>
+          <tr><th style="${th}">Source</th><td style="${td}">${payload.wasBpe ? 'BPE-compressed (decoded in memory)' : 'Raw'}</td></tr>
+          <tr><th style="${th}">Data size</th><td style="${td}">${humanSize(payload.bytes.length)}</td></tr>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-close">Close</button>
+        <button class="modal-export primary">Export PNG</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const cv = overlay.querySelector('#imgPreviewCanvas');
+  cv.width = img.width; cv.height = img.height;
+  cv.getContext('2d').putImageData(new ImageData(img.rgba, img.width, img.height), 0, 0);
+  function close(){ overlay.remove(); }
+  overlay.querySelector('.modal-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('.modal-export').addEventListener('click', () => {
+    saveDataUrlOrDownload(cv.toDataURL('image/png'), entry.name + '.png');
+  });
+}
+
+// Clones the entry's own TPL headers (decompressing a BPE wrapper first if needed), then arms
+// tplPngInput to pick the replacement image once the user confirms via the file picker.
+function startTplInjectPng(entry){
+  let payload, tpl;
+  try { payload = decompressBpePayload(entry); }
+  catch(err){ return alertModal('Could not decompress', `This entry looked like BPE-compressed data but didn't decode cleanly:\n${err.message}`); }
+  try { tpl = parseTplHeader(payload.bytes); }
+  catch(err){ return alertModal('Not a TPL', `Can't clone TPL headers from this entry — ${err.message}`); }
+  pendingTplEntry = entry;
+  pendingTplMeta = {
+    wasBpe: payload.wasBpe, bpeField2: payload.bpeField2,
+    width: tpl.width, height: tpl.height, palFormat: tpl.palFormat,
+    imgHeaderBytes: tpl.imgHeaderBytes, palHeaderBytes: tpl.palHeaderBytes
+  };
+  tplPngInput.value = '';
+  tplPngInput.click();
+}
+
+async function onTplPngPicked(e){
+  const f = e.target.files[0];
+  const entry = pendingTplEntry, meta = pendingTplMeta;
+  pendingTplEntry = null; pendingTplMeta = null;
+  if (!f || !entry || !meta) return;
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = async () => {
+      const cv = document.createElement('canvas');
+      cv.width = meta.width; cv.height = meta.height;
+      const cctx = cv.getContext('2d');
+      cctx.imageSmoothingEnabled = true; cctx.imageSmoothingQuality = 'high';
+      cctx.drawImage(img, 0, 0, meta.width, meta.height);
+      const pixels = cctx.getImageData(0, 0, meta.width, meta.height).data;
+
+      const tplBytes = encodeCI8Tpl(pixels, meta.width, meta.height, meta.palFormat, meta.imgHeaderBytes, meta.palHeaderBytes);
+      let finalBytes = tplBytes;
+      let compressedNote = '';
+      if (meta.wasBpe){
+        const compressed = bpeCompress(tplBytes);
+        finalBytes = wrapBpe(compressed, tplBytes.length, meta.bpeField2);
+        compressedNote = `, compressed to ${humanSize(finalBytes.length)} and wrapped as BPE`;
+      }
+      await performInject(entry, finalBytes);
+      await alertModal('Injected as TPL', `Rebuilt a ${meta.width}×${meta.height} CI8 TPL from "${f.name}" (${humanSize(tplBytes.length)})${compressedNote}, cloning the original's header flags and palette format, and injected it into "${entry.name}".`);
+    };
+    img.onerror = async () => { await alertModal('Image error', 'Could not decode that image file.'); };
+    img.src = ev.target.result;
+  };
+  reader.onerror = async () => { await alertModal('Read error', 'Could not read the replacement image.'); };
+  reader.readAsDataURL(f);
+}
+
+function sliceEntry(e){
+  const end = Math.min(e.realAddr + e.outSize, masterBuffer.byteLength);
+  return masterBuffer.slice(e.realAddr, end);
+}
+
+async function downloadEntry(e){
+  const data = sliceEntry(e);
+  const outName = e.name + (e.ext && e.ext !== '.dat' ? e.ext : '.dat');
+  await saveBlobOrDownload(new Blob([data]), outName);
+}
+
+async function extractAllZip(visible){
+  if (typeof JSZip === 'undefined') return showError('ZIP library failed to load — check your connection.');
+  const zip = new JSZip();
+  visible.forEach(e => {
+    const fname = e.name + (e.ext && e.ext !== '.dat' ? e.ext : '.dat');
+    zip.file(fname, sliceEntry(e));
+  });
+  const blob = await zip.generateAsync({type:'blob'});
+  const outName = (fileBaseName.replace(/\.[^/.]+$/,'') || 'archive') + '_extracted.zip';
+  await saveBlobOrDownload(blob, outName);
+}
+
+function startInject(entry){
+  pendingInject = entry;
+  pendingInjectMode = 'raw';
+  injectInput.value = '';
+  injectInput.click();
+}
+
+function startInjectBPE(entry){
+  pendingInject = entry;
+  pendingInjectMode = 'bpe';
+  injectInput.value = '';
+  injectInput.click();
+}
+
+// --- Generic offset-fixup engine, used whenever bytes are inserted somewhere in the archive
+// (growing an entry beyond its slot, or appending a brand-new entry). Insertion is always
+// rounded up to a 2048-byte block so DPK8/EPK8's block-quantized offset fields (unit=2048)
+// stay exact integers even when the shift ripples through a mixed-format nested archive.
+function roundUp2048(n){ return Math.ceil(n / 2048) * 2048; }
+
+// Recursively walks the container tree (using the CURRENT, not-yet-shifted buffer) starting
+// at `base`, and records which addr/off fields need their stored value bumped by `deltaBytes`
+// because the data they point to lies at/after `insertAt`. A container whose own TOC already
+// ends at/after insertAt shifts uniformly as a whole, so nothing inside it needs rewriting —
+// only containers that "straddle" the insertion point need individual field fixups.
+//
+// `sizeBumps` is the companion fix: every time we have to recurse INTO a nested container
+// (because insertAt lands somewhere inside it), that container's own byte footprint just grew
+// by deltaBytes too — and its *parent's* TOC still has a stale (too-small) declared size for
+// that entry unless we bump it here. Without this, growing a file inside a nested PAC/DPK8/
+// EPK8 leaves every ancestor wrapper entry's size field pointing at the old, smaller size —
+// which is what corrupts the archive for any other tool (or the game itself) reading it, even
+// though this tool's own live buffer still looks fine right after the edit.
+function collectAddrBumps(base, insertAt, deltaBytes, results, sizeBumps){
+  let parsed;
+  try { parsed = parseContainerAt(base); } catch(err){ return; }
+  if (parsed.tocEnd >= insertAt) return;
+  const be = endianSel.value === 'be';
+  // HSPC also records its own overall size in its header, so if the change lands inside this
+  // container those totals have to move with it (in blocks for 0x24/0x2C, in bytes for 0x3C).
+  if (parsed.hspc && insertAt <= base + parsed.hspc.totalBytes){
+    parsed.hspc.blockFields.forEach(off => results.push({ offset: off, len: 4, value: readUint(masterView, off, 4, be) + deltaBytes / 2048 }));
+    results.push({ offset: parsed.hspc.dataSizeField, len: 4, value: readUint(masterView, parsed.hspc.dataSizeField, 4, be) + deltaBytes });
+  }
+  parsed.entries.forEach(e => {
+    if (e.isDir) return; // DPK8 directory rows pack metadata into their off field, not a real pointer
+    if (e.realAddr >= insertAt){
+      const unit = e.kind === 'PAC' ? 1 : 2048;
+      const oldVal = readUint(masterView, e.addrField.offset, e.addrField.len, be);
+      results.push({ offset: e.addrField.offset, len: e.addrField.len, value: oldVal + (deltaBytes / unit) });
+    } else if (e.isRealContainer){
+      const sizeUnit = e.kind === 'PAC' ? 1 : 256;
+      const oldSize = readUint(masterView, e.sizeField.offset, e.sizeField.len, be);
+      sizeBumps.push({ offset: e.sizeField.offset, len: e.sizeField.len, value: oldSize + (deltaBytes / sizeUnit) });
+      collectAddrBumps(e.realAddr, insertAt, deltaBytes, results, sizeBumps);
+    }
+  });
+}
+
+// Inserts `deltaBytes` zero bytes at absolute position `insertAt` across the whole archive,
+// rewriting every affected offset field throughout the file (at every nesting level) — including
+// the declared size of every ancestor container-wrapper entry whose footprint just grew — and
+// shifting the breadcrumb trail's remembered offsets so navigation stays valid.
+function applyGlobalInsert(insertAt, deltaBytes){
+  const level = activeBufLevel;
+  const bumps = [];
+  const sizeBumps = [];
+  collectAddrBumps(0, insertAt, deltaBytes, bumps, sizeBumps);
+  const oldArr = new Uint8Array(masterBuffer);
+  const newBuf = new ArrayBuffer(oldArr.length + deltaBytes);
+  const newArr = new Uint8Array(newBuf);
+  newArr.set(oldArr.subarray(0, insertAt), 0);
+  newArr.set(oldArr.subarray(insertAt), insertAt + deltaBytes);
+  const newView = new DataView(newBuf);
+  const be = endianSel.value === 'be';
+  bumps.forEach(b => writeUint(newView, b.offset, b.len, b.value, be));
+  sizeBumps.forEach(b => writeUint(newView, b.offset, b.len, b.value, be));
+  // Only offsets that live in the SAME buffer layer this insert is happening in are meaningful
+  // to shift — offsets belonging to other (e.g. still-open BPE-decompressed) layers point into a
+  // different ArrayBuffer entirely and must be left alone.
+  navStack = navStack.map(n => (n.bufLevel === level && n.offset >= insertAt) ? { ...n, offset: n.offset + deltaBytes } : n);
+  masterBuffer = newBuf;
+  masterView = newView;
+  bufferStack[level].buffer = newBuf;
+  bufferStack[level].view = newView;
+}
+
+// Mirrors applyGlobalInsert but removes `removeLen` bytes starting at absolute position `removeAt`
+// instead of inserting them. Reuses the exact same collectAddrBumps walk — it only cares about a
+// threshold position and a delta, not the delta's sign — so removal gets the identical guarantee
+// insertion already has: every affected addr/size field throughout the whole archive, at every
+// nesting level, gets rewritten, and nothing is left pointing at stale offsets. `removeAt` and
+// `removeAt+removeLen` must bound a span that isn't itself still referenced by anything other than
+// whatever the caller is in the middle of deleting (the caller is responsible for having already
+// removed/shrunk the table entry pointing at that span before calling this for its data, or vice
+// versa in an order where the two steps don't overlap — see deleteEntryPAC/deleteEntryEPK8).
+function applyGlobalRemove(removeAt, removeLen){
+  if (removeLen <= 0) return;
+  const level = activeBufLevel;
+  const shiftPoint = removeAt + removeLen;
+  const bumps = [];
+  const sizeBumps = [];
+  collectAddrBumps(0, shiftPoint, -removeLen, bumps, sizeBumps);
+  const oldArr = new Uint8Array(masterBuffer);
+  const newBuf = new ArrayBuffer(oldArr.length - removeLen);
+  const newArr = new Uint8Array(newBuf);
+  newArr.set(oldArr.subarray(0, removeAt), 0);
+  newArr.set(oldArr.subarray(shiftPoint), removeAt);
+  const newView = new DataView(newBuf);
+  const be = endianSel.value === 'be';
+  bumps.forEach(b => writeUint(newView, b.offset, b.len, b.value, be));
+  sizeBumps.forEach(b => writeUint(newView, b.offset, b.len, b.value, be));
+  navStack = navStack.map(n => (n.bufLevel === level && n.offset >= shiftPoint) ? { ...n, offset: n.offset - removeLen } : n);
+  masterBuffer = newBuf;
+  masterView = newView;
+  bufferStack[level].buffer = newBuf;
+  bufferStack[level].view = newView;
+}
+
+async function performInject(entry, newBytes, opts={}){
+  let grewBy = 0;
+  if (newBytes.length > entry.outSize){
+    const growNeeded = newBytes.length - entry.outSize;
+    const deltaBytes = roundUp2048(growNeeded);
+    const ok = await confirmModal('Archive will grow', `This replacement is ${humanSize(newBytes.length)}, ${humanSize(growNeeded)} bigger than the current slot.\n\nGrowing shifts every byte located after this entry by ${humanSize(deltaBytes)} (rounded up to a 2048-byte block) and rewrites offsets throughout the archive so everything else still resolves correctly. This can't be undone except by reloading the original file.\n\nContinue?`);
+    if (!ok) return;
+    const insertAt = entry.realAddr + entry.outSize;
+    applyGlobalInsert(insertAt, deltaBytes);
+    entry.outSize += deltaBytes;
+    grewBy = deltaBytes;
+  }
+  const capacity = entry.outSize;
+  new Uint8Array(masterBuffer, entry.realAddr, capacity).fill(0);
+  new Uint8Array(masterBuffer, entry.realAddr, newBytes.length).set(newBytes);
+
+  const be = endianSel.value === 'be';
+  let storedValue;
+  if (entry.kind === 'PAC'){
+    storedValue = k18Chk.checked ? newBytes.length + 16 : newBytes.length;
+  } else {
+    storedValue = Math.ceil(newBytes.length / 256);
+  }
+  writeUint(masterView, entry.sizeField.offset, entry.sizeField.len, storedValue, be);
+
+  markDirty();
+  if (!opts.silent){
+    renderCurrent();
+    if (grewBy) await alertModal('Injected (grown)', `Archive grew by ${humanSize(grewBy)} to fit the ${humanSize(newBytes.length)} replacement.`);
+  }
+}
+
+// Appends a brand-new entry to a PAC/PACH container: grows the TOC by one record (shifting
+// everything after it), increments the entry count, appends the file's bytes at the true end
+// of the archive, and fills in the new record's id/offset/size fields.
+async function addNewEntryPAC(containerBase, parsed, newBytes, suggestedFilename){
+  const nameSize = parsed.magic === 'PAC ' ? 2 : 4;
+  const offSize  = parsed.magic === 'PAC ' ? 3 : 4;
+  const sizeSize = offSize;
+  const recLen = nameSize + offSize + sizeSize;
+  const maxHexDigits = nameSize * 2;
+  const maxFileno = parsed.entries.reduce((m,e)=>Math.max(m, e.fileno), -1);
+  const suggested = (maxFileno + 1).toString(16).toUpperCase();
+
+  const input = await promptModal('New entry — numeric id', `PAC/PACH entries are identified by a numeric id, not a filename.\nHex, up to ${maxHexDigits} digits.\nFile being added: ${suggestedFilename} (${humanSize(newBytes.length)})`, suggested);
+  if (input === null) return;
+  const cleaned = input.trim().replace(/^0x/i, '');
+  if (!/^[0-9a-fA-F]+$/.test(cleaned)) return alertModal('Invalid value', 'Enter a valid hex value, e.g. 1A2B.');
+  const fileno = parseInt(cleaned, 16);
+  const maxVal = Math.pow(2, nameSize*8) - 1;
+  if (fileno > maxVal) return alertModal('Value too large', `Max is ${maxVal.toString(16).toUpperCase()} for a ${nameSize}-byte id.`);
+  if (parsed.entries.some(e => e.fileno === fileno)){
+    const ok = await confirmModal('Duplicate id', `Id ${fileno.toString(16).toUpperCase()} is already used by another entry in this container. This tool can display duplicate ids (with a [n] suffix) but other tools reading this archive may not expect it.\n\nAdd it anyway?`);
+    if (!ok) return;
+  }
+
+  const be = endianSel.value === 'be';
+  const tocEndOld = parsed.tocEnd;
+
+  // Step 1: open up space for one new TOC record, shifting everything after it.
+  applyGlobalInsert(tocEndOld, recLen);
+  const oldCount = readUint(masterView, containerBase+4, 4, be);
+  writeUint(masterView, containerBase+4, 4, oldCount + 1, be);
+
+  // Step 2: append the new file's data at the true end of the archive.
+  const dataInsertAt = masterBuffer.byteLength;
+  const growNeeded = roundUp2048(newBytes.length);
+  applyGlobalInsert(dataInsertAt, growNeeded);
+  new Uint8Array(masterBuffer, dataInsertAt, newBytes.length).set(newBytes);
+
+  // Step 3: fill in the new record, in the space opened up in step 1.
+  const recordOffset = tocEndOld;
+  const tocEndNew = tocEndOld + recLen;
+  writeUint(masterView, recordOffset, nameSize, fileno, be);
+  writeUint(masterView, recordOffset + nameSize, offSize, dataInsertAt - tocEndNew, be);
+  const sizeValue = k18Chk.checked ? newBytes.length + 16 : newBytes.length;
+  writeUint(masterView, recordOffset + nameSize + offSize, sizeSize, sizeValue, be);
+
+  markDirty();
+  renderCurrent();
+  await alertModal('Entry added', `Added new entry with id ${fileno.toString(16).toUpperCase()} (${humanSize(newBytes.length)}).`);
+}
+
+// Appends a brand-new file to an existing directory inside an EPK8 container. Unlike PAC's TOC,
+// EPK8's file offsets are stored relative to the *fixed* end of its 16KB header table (not to a
+// TOC that can grow), so making room for a new row is a purely local shuffle inside that fixed
+// table — nothing elsewhere needs its offset rewritten. The only genuinely reverse-engineered
+// part is a directory row's packed file-count field: this preserves the bits outside the known
+// count range unchanged, on the assumption they encode something unrelated to the count.
+async function addNewEntryEPK8(containerBase, parsed, newBytes, suggestedFilename){
+  const headerSize = 16384;
+  const nameSize = 8, offSize = 4, sizeSize = 4, offsetDiv = 4, valueRange = 65535;
+  const dirRowLen = nameSize/2 + offSize + sizeSize;
+  const fileRowLen = nameSize + offSize + sizeSize;
+
+  const groups = [];
+  let current = null;
+  parsed.entries.forEach(e => {
+    if (e.isDir){ current = {dir:e, files:[]}; groups.push(current); }
+    else if (current) current.files.push(e);
+  });
+  if (!groups.length) return alertModal('No directory found', 'This EPK8 container has no directory row to add a file into.');
+
+  let target = groups[0];
+  if (groups.length > 1){
+    const names = groups.map((g,i) => `${i}: ${g.dir.name}`).join('\n');
+    const input = await promptModal('Choose directory', `This archive has multiple directories:\n${names}\n\nType the index or the exact name.`, '0');
+    if (input === null) return;
+    const trimmed = input.trim();
+    const found = /^\d+$/.test(trimmed) ? groups[Number(trimmed)] : groups.find(g => g.dir.name.toLowerCase() === trimmed.toLowerCase());
+    if (!found) return alertModal('Not found', `No directory matching "${input}".`);
+    target = found;
+  }
+
+  const groupEnd = g => g.files.length
+    ? g.files[g.files.length-1].nameField.offset + fileRowLen
+    : g.dir.nameField.offset + dirRowLen;
+
+  const insertionPoint = groupEnd(target);
+  const usedEnd = groupEnd(groups[groups.length-1]);
+  const headerEnd = containerBase + headerSize;
+  if (usedEnd + fileRowLen > headerEnd){
+    return alertModal('Header table full', `This EPK8 container's fixed 16KB header table has no room left for another entry (needs ${fileRowLen} more bytes and only ${headerEnd-usedEnd} remain).`);
+  }
+
+  const nameInput = await promptModal('New entry — filename', `Up to ${nameSize} characters, stored as-is in the archive.\nFile being added: ${suggestedFilename} (${humanSize(newBytes.length)})\nDirectory: ${target.dir.name}`, suggestedFilename.replace(/\.[^/.]+$/,'').slice(0,nameSize));
+  if (nameInput === null) return;
+
+  const be = endianSel.value === 'be';
+  const dataBase = containerBase + headerSize;
+
+  // Step 1: append the new file's data at the true end of the archive, padding first if needed
+  // so its start lands on a 2048-byte boundary relative to this container's data base.
+  let dataInsertAt = masterBuffer.byteLength;
+  const misalign = (dataInsertAt - dataBase) % 2048;
+  if (misalign !== 0){
+    const pad = 2048 - misalign;
+    applyGlobalInsert(dataInsertAt, pad);
+    dataInsertAt += pad;
+  }
+  applyGlobalInsert(dataInsertAt, roundUp2048(newBytes.length));
+  new Uint8Array(masterBuffer, dataInsertAt, newBytes.length).set(newBytes);
+
+  // Step 2: locally shift the header table's trailing rows down by one row's length to open a
+  // gap — safe because their off/size fields are anchored to the fixed headerEnd, not to their
+  // position inside the table, so shifting them needs no field rewrites at all.
+  const moveLen = usedEnd - insertionPoint;
+  if (moveLen > 0){
+    const moved = new Uint8Array(masterBuffer, insertionPoint, moveLen).slice();
+    new Uint8Array(masterBuffer, insertionPoint + fileRowLen, moveLen).set(moved);
+  }
+  new Uint8Array(masterBuffer, insertionPoint, fileRowLen).fill(0);
+
+  // Step 3: write the new file row into the opened gap.
+  writeAsciiPadded(masterView, insertionPoint, nameSize, nameInput);
+  writeUint(masterView, insertionPoint + nameSize, offSize, (dataInsertAt - dataBase) / 2048, be);
+  writeUint(masterView, insertionPoint + nameSize + offSize, sizeSize, Math.ceil(newBytes.length / 256), be);
+
+  // Step 4: bump the target directory's packed file-count field, preserving its other bits.
+  const oldOff = readUint(masterView, target.dir.addrField.offset, target.dir.addrField.len, be);
+  const oldCount = Math.floor((oldOff & valueRange) / offsetDiv);
+  const remainder = oldOff % offsetDiv;
+  const highBits = oldOff - (oldOff & valueRange);
+  const newLow = (oldCount + 1) * offsetDiv + remainder;
+  if (newLow > valueRange){
+    return alertModal('Directory full', `Directory "${target.dir.name}" can't hold any more files — its packed file-count field would overflow.`);
+  }
+  writeUint(masterView, target.dir.addrField.offset, target.dir.addrField.len, highBits + newLow, be);
+
+  markDirty();
+  renderCurrent();
+  await alertModal('Entry added', `Added "${nameInput}" (${humanSize(newBytes.length)}) to directory "${target.dir.name}".`);
+}
+
+// Removes one entry from a PAC/PACH container: the reverse of addNewEntryPAC. PAC/PACH offsets
+// are stored relative to the end of the TOC (tocEnd), not as absolute positions, so shrinking the
+// TOC by one record automatically shifts the data section — and every remaining record's *stored*
+// relative offset stays correct without any rewriting, exactly mirroring why adding a record needs
+// none either. Only the entry's own data span (elsewhere in the file) needs the generic global
+// offset-fixup engine, same as it does for anything else that shrinks or grows in place.
+async function deleteEntryPAC(containerBase, entry, magic){
+  const nameSize = magic === 'PAC ' ? 2 : 4;
+  const offSize  = magic === 'PAC ' ? 3 : 4;
+  const sizeSize = offSize;
+  const recLen = nameSize + offSize + sizeSize;
+  const be = endianSel.value === 'be';
+  const recordStart = entry.filenoField.offset;
+
+  // Step 1: remove the TOC record itself and drop the entry count to match. Must happen first,
+  // and the count must be updated immediately after, so the container's computed tocEnd matches
+  // physical reality before anything below re-parses it.
+  applyGlobalRemove(recordStart, recLen);
+  const oldCount = readUint(masterView, containerBase+4, 4, be);
+  writeUint(masterView, containerBase+4, 4, Math.max(oldCount - 1, 0), be);
+
+  // Step 2: remove the entry's own data. It shifted left by recLen along with everything else in
+  // step 1, so its new address is simply the old one minus recLen.
+  const newRealAddr = entry.realAddr - recLen;
+  applyGlobalRemove(newRealAddr, entry.rawSize);
+
+  markDirty();
+  renderCurrent();
+  await alertModal('Entry deleted', `Removed "${entry.name}" (${humanSize(entry.outSize)}) from the archive.`);
+}
+
+// Removes one file from an existing directory inside an EPK8 container: the reverse of
+// addNewEntryEPK8. The header-table row removal is a purely local shuffle (EPK8's 16KB header
+// table is a fixed size, so nothing outside the table is affected by that part). The entry's data,
+// though, is removed as a 2048-byte-rounded span — the same convention this tool uses everywhere
+// else for EPK8's block-quantized offset fields — via the generic global offset-fixup engine, so
+// every other entry (including inside nested containers) still resolves correctly afterward.
+async function deleteEntryEPK8(containerBase, entry, parsed){
+  const nameSize = 8, offSize = 4, sizeSize = 4, offsetDiv = 4, valueRange = 65535;
+  const fileRowLen = nameSize + offSize + sizeSize;
+  const dirRowLen = nameSize/2 + offSize + sizeSize;
+  const be = endianSel.value === 'be';
+
+  const groups = [];
+  let current = null;
+  parsed.entries.forEach(e => {
+    if (e.isDir){ current = {dir:e, files:[]}; groups.push(current); }
+    else if (current) current.files.push(e);
+  });
+  const target = groups.find(g => g.files.includes(entry));
+  if (!target) return alertModal('Not found', "Could not locate this entry's parent directory row.");
+
+  const groupEnd = g => g.files.length
+    ? g.files[g.files.length-1].nameField.offset + fileRowLen
+    : g.dir.nameField.offset + dirRowLen;
+  const usedEnd = groupEnd(groups[groups.length-1]);
+
+  const rowStart = entry.nameField.offset;
+  const rowEnd = rowStart + fileRowLen;
+
+  // Step 1: locally shift every row after this one (across every directory in the table) up by
+  // one row's length to close the gap, then zero the vacated tail.
+  const moveLen = usedEnd - rowEnd;
+  if (moveLen > 0){
+    const moved = new Uint8Array(masterBuffer, rowEnd, moveLen).slice();
+    new Uint8Array(masterBuffer, rowStart, moveLen).set(moved);
+  }
+  new Uint8Array(masterBuffer, usedEnd - fileRowLen, fileRowLen).fill(0);
+
+  // Step 2: drop the parent directory's packed file-count field, preserving its other bits.
+  const oldOff = readUint(masterView, target.dir.addrField.offset, offSize, be);
+  const oldCount = Math.floor((oldOff & valueRange) / offsetDiv);
+  const remainder = oldOff % offsetDiv;
+  const highBits = oldOff - (oldOff & valueRange);
+  const newLow = Math.max(oldCount - 1, 0) * offsetDiv + remainder;
+  writeUint(masterView, target.dir.addrField.offset, offSize, highBits + newLow, be);
+
+  // Step 3: remove the entry's own data, 2048-rounded, rewriting offsets throughout the archive.
+  const dataLen = roundUp2048(entry.outSize);
+  applyGlobalRemove(entry.realAddr, dataLen);
+
+  markDirty();
+  renderCurrent();
+  await alertModal('Entry deleted', `Removed "${entry.name}" (${humanSize(entry.outSize)}) from directory "${target.dir.name}".`);
+}
+
+// Confirms with the user, then dispatches to the right delete routine for the container's format.
+async function startDelete(entry, parsed){
+  const containerBase = navStack[navStack.length-1].offset;
+  const supported = parsed.kind === 'PAC' || parsed.magic === 'EPK8';
+  if (!supported){
+    const msg = parsed.magic === 'HSPC'
+      ? "HSPC keeps two linked index tables (name hashes and file records) plus size totals in its header, and this tool doesn't delete entries from HSPC archives."
+      : parsed.magic === 'EPAC'
+      ? "EPAC packs a recursive directory tree into a fixed 16KB header table, and this tool doesn't delete entries from EPAC archives."
+      : "DPK8 reserves a fixed-size 16KB header table with narrower (16-bit) packed fields than EPK8, and this tool doesn't have confirmed enough understanding of a DPK8 directory row's packed file-count field to safely delete from it.";
+    return alertModal('Not supported', msg);
+  }
+  const ok = await confirmModal('Delete entry', `Delete "${entry.name}" (${humanSize(entry.outSize)}) from this archive?\n\nThis removes its table entry and its data, shifting everything after it and rewriting offsets throughout the archive — including inside nested containers — so everything else still resolves correctly. This can't be undone except by reloading the original file.`);
+  if (!ok) return;
+  if (parsed.kind === 'PAC') await deleteEntryPAC(containerBase, entry, parsed.magic);
+  else await deleteEntryEPK8(containerBase, entry, parsed);
+}
+
+// Dispatches a picked file to the right add-entry routine for the container's format.
+function addUnsupportedMessage(parsed){
+  if (parsed.magic === 'HSPC') return "HSPC keeps two linked index tables (name hashes and file records) plus size totals in its header, and this tool doesn't add new entries to HSPC archives.";
+  if (parsed.magic === 'EPAC') return "EPAC packs a recursive directory tree into a fixed 16KB header table, and this tool doesn't add new entries (or new directories) to EPAC archives.";
+  return "DPK8 reserves a fixed-size 16KB header table with narrower (16-bit) packed fields than EPK8, and this tool doesn't add new entries to DPK8 archives.";
+}
+
+async function onAddFile(containerBase, newBytes, filename){
+  const parsed = parseContainerAt(containerBase);
+  if (parsed.kind === 'PAC') return addNewEntryPAC(containerBase, parsed, newBytes, filename);
+  if (parsed.magic === 'EPK8') return addNewEntryEPK8(containerBase, parsed, newBytes, filename);
+  return alertModal('Not supported', addUnsupportedMessage(parsed));
+}
+
+function startAddFile(parsed){
+  if (parsed.kind !== 'PAC' && parsed.magic !== 'EPK8'){
+    alertModal('Not supported', addUnsupportedMessage(parsed) + "\n\nExisting slots can still be Injected into — including growing them.");
+    return;
+  }
+  pendingAddContainerBase = navStack[navStack.length-1].offset;
+  pendingInjectMode = 'newentry';
+  injectInput.value = '';
+  injectInput.click();
+}
+
+// Builds the same "BPE " + 3×u32(LE) wrapper observed around compressed entries in real files:
+// field2's meaning isn't confirmed (only ever seen as 256 in samples so far), field3 = compressed
+// payload length, field4 = decompressed length. If the original entry didn't have this wrapper,
+// we skip it and inject the raw compressed stream instead.
+function wrapBpe(compressed, decompressedLen, field2){
+  const header = new Uint8Array(16);
+  const dv = new DataView(header.buffer);
+  header[0]=0x42; header[1]=0x50; header[2]=0x45; header[3]=0x20; // "BPE "
+  dv.setUint32(4, field2, true);
+  dv.setUint32(8, compressed.length, true);
+  dv.setUint32(12, decompressedLen, true);
+  const out = new Uint8Array(16 + compressed.length);
+  out.set(header, 0);
+  out.set(compressed, 16);
+  return out;
+}
+
+async function onInjectFile(e){
+  const f = e.target.files[0];
+  const mode = pendingInjectMode;
+
+  if (mode === 'newentry'){
+    const containerBase = pendingAddContainerBase;
+    pendingAddContainerBase = null;
+    pendingInjectMode = 'raw';
+    if (!f || containerBase === null) return;
+    const reader = new FileReader();
+    reader.onload = async ev => { await onAddFile(containerBase, new Uint8Array(ev.target.result), f.name); };
+    reader.onerror = async () => { await alertModal('Read error', 'Could not read the file to add.'); };
+    reader.readAsArrayBuffer(f);
+    return;
+  }
+
+  const entry = pendingInject;
+  pendingInject = null;
+  if (!f || !entry) return;
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    let newBytes = new Uint8Array(ev.target.result);
+    if (mode === 'bpe'){
+      const compressed = bpeCompress(newBytes);
+      const originalMagic = magicAt(masterView, entry.realAddr, masterBuffer.byteLength);
+      const hadWrapper = originalMagic === 'BPE ';
+      let field2 = 256;
+      if (hadWrapper) field2 = masterView.getUint32(entry.realAddr + 4, true);
+      const finalBytes = hadWrapper ? wrapBpe(compressed, newBytes.length, field2) : compressed;
+      await performInject(entry, finalBytes);
+      await alertModal('Injected as BPE', `${humanSize(newBytes.length)} → ${humanSize(finalBytes.length)} compressed${hadWrapper ? ' (with BPE wrapper header)' : ''}.`);
+    } else {
+      await performInject(entry, newBytes);
+    }
+  };
+  reader.onerror = async () => { await alertModal('Read error', 'Could not read the replacement file.'); };
+  reader.readAsArrayBuffer(f);
+}
+
+function downloadModifiedArchive(){
+  const blob = new Blob([masterBuffer]);
+  const dot = fileBaseName.lastIndexOf('.');
+  const stem = dot > -1 ? fileBaseName.slice(0,dot) : fileBaseName;
+  const ext = dot > -1 ? fileBaseName.slice(dot) : '';
+  saveBlobOrDownload(blob, stem + '-EDITED' + ext);
+}
+</script>
+</body>
+</html>
